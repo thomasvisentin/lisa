@@ -1,0 +1,36 @@
+class availableExpressions {
+    test1(){
+       def b= 10;
+       def c= 5;
+       def a= (b - 1) * 2;
+         while (a < 100 * (b-1)){
+            b= a + 1;
+            a= (b - 1) * (a + 1);
+            c= (b - 1) * 2;
+         }
+
+    }
+
+    test2(){
+       def a= 2;
+       def b= 3;
+       def x=a*b;
+        if (a+b<=a*b) {
+            a=a+1;
+            x=a*b;
+        }
+    }
+
+    test3(){
+            def a= 5;
+            def b= 4;
+            def x=a+b;
+            def y=a*b;
+            while (y > a+b){
+                a=a+1;
+                x=a+b;
+            }
+
+
+    }
+}
