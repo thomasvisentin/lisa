@@ -9,6 +9,7 @@ import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.ValueExpression;
 
+
 // An element of the reaching definitions dataflow domain.
 public class ReachingDefinitions 
 	implements DataflowElement< // instances of this class represent a single element of the dataflow domain
@@ -22,6 +23,7 @@ public class ReachingDefinitions
 	private final Identifier variable;
 	// the program point where the variable has been defined
 	private final ProgramPoint programPoint;
+
 	
 	// this constructor will be used when creating the abstract state
 	public ReachingDefinitions() {
@@ -32,6 +34,7 @@ public class ReachingDefinitions
 	private ReachingDefinitions(Identifier variable, ProgramPoint pp) {
 		this.programPoint = pp;
 		this.variable = variable;
+
 	}
 
 	// instances of this class will end up in collections, so it is a good practice to 
@@ -73,7 +76,7 @@ public class ReachingDefinitions
 	
 	@Override
 	public String toString() {
-		return "(" + variable + "," + programPoint + ")"; 
+		return "(" + variable + ", " + programPoint + ")";
 	}
 
 	// the variable we are referring to
@@ -98,6 +101,7 @@ public class ReachingDefinitions
 			PossibleForwardDataflowDomain<ReachingDefinitions> domain) {
 		Collection<Identifier> result = new HashSet<>();
 		result.add(id);
+		System.out.println(id.toString() + " " + expression.toString());
 		return result;
 	}
 }
