@@ -73,7 +73,7 @@ public class ReachingDefinitions
 	
 	@Override
 	public String toString() {
-		return "(" + variable + "," + programPoint + ")"; 
+		return "(" + variable + ", " + programPoint + ")";
 	}
 
 	// the variable we are referring to
