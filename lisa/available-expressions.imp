@@ -1,0 +1,14 @@
+class availableExpressions {
+
+	example() {
+	    def a = 2;
+	    def b = 2;
+		def x = a+b;
+		def y = a*b;
+		while(y > a+b){
+		    a = a+1;
+		    x = a+b;
+		}
+	}
+
+}

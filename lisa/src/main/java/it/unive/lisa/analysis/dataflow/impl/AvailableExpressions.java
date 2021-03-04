@@ -1,7 +1,7 @@
 package it.unive.lisa.analysis.dataflow.impl;
 
 import it.unive.lisa.analysis.dataflow.DataflowElement;
-import it.unive.lisa.analysis.dataflow.PossibleForwardDataflowDomain;
+import it.unive.lisa.analysis.dataflow.DefiniteForwardDataflowDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.ValueExpression;
@@ -9,7 +9,7 @@ import it.unive.lisa.symbolic.value.ValueExpression;
 import java.util.Collection;
 import java.util.HashSet;
 
-public class AvailableExpressions implements DataflowElement<PossibleForwardDataflowDomain<AvailableExpressions>, AvailableExpressions> {
+public class AvailableExpressions implements DataflowElement<DefiniteForwardDataflowDomain<AvailableExpressions>, AvailableExpressions> {
     private final Identifier variable;
     private final ProgramPoint programPoint;
 
@@ -63,12 +63,11 @@ public class AvailableExpressions implements DataflowElement<PossibleForwardData
         return this.variable;
     }
 
-
-
     // the gen function: which elements are we generating when we are performing an assignment
     @Override
     public Collection<AvailableExpressions> gen (Identifier id, ValueExpression expression, ProgramPoint pp,
-        PossibleForwardDataflowDomain < AvailableExpressions > domain){
+        DefiniteForwardDataflowDomain < AvailableExpressions > domain){
+
         AvailableExpressions generated = new AvailableExpressions(id, pp);
         Collection<AvailableExpressions> result = new HashSet<>();
         result.add(generated);
@@ -78,12 +77,12 @@ public class AvailableExpressions implements DataflowElement<PossibleForwardData
     // the kill function: which variables are we killing when we perform an assignment
     @Override
     public Collection<Identifier> kill (Identifier id, ValueExpression expression, ProgramPoint pp,
-        PossibleForwardDataflowDomain < AvailableExpressions > domain){
+        DefiniteForwardDataflowDomain < AvailableExpressions > domain){
+
         Collection<Identifier> result = new HashSet<>();
         result.add(id);
         return result;
     }
-
 
 }
 
