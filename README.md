@@ -38,4 +38,4 @@ We foresee at least five alpha releases that are meant as intermediate building 
 * Add more heap and value analyses
 * Add call graph abstractions
 
-The 1.0 release will be delivered as we reach a stable version of all the main ingredients for the analysis (call graphs and abstractions) as well as a flexible enough control flow graph representation that enables the modeling of most languages.
+THe 1.0 release will be delivered as we reach a stable version of all the main ingredients for the analysis (call graphs and abstractions) as well as a flexible enough control flow graph representation that enables the modeling of most languages.
