@@ -1,0 +1,14 @@
+class reachingDefinitions {
+    test1() {
+        def b = 10;
+        def a = (b-1)*2;
+        def c = 0;
+        while (a < 100 * (b-1)) {
+            b = a+1;
+            a = (b - 1) * (a + 1);
+            c = (b - 1) * 2;
+        }
+
+        return c;
+    }
+}

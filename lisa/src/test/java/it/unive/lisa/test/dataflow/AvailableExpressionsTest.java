@@ -1,5 +1,6 @@
 package it.unive.lisa.test.dataflow;
 
+import it.unive.lisa.analysis.dataflow.impl.AvailableExpressions;
 import org.junit.Test;
 
 import it.unive.lisa.AnalysisException;
@@ -14,12 +15,12 @@ import it.unive.lisa.program.Program;
 import it.unive.lisa.test.imp.IMPFrontend;
 import it.unive.lisa.test.imp.ParsingException;
 
-public class ReachingDefinitionsTest {
+public class AvailableExpressionsTest {
     
     // we mark the method as a junit test, so that gradle knows
     // that it must be executed as part of the build
     @Test
-    public void testReachingDefinitions() throws ParsingException, AnalysisException {
+    public void testAvailableExpressions() throws ParsingException, AnalysisException {
         // first step: create a lisa instance
         LiSA lisa = new LiSA();
         
@@ -31,7 +32,7 @@ public class ReachingDefinitionsTest {
         
         // the value domain is our reaching definition analysis, that
         // has to be wrapped in a possible dataflow domain
-        ValueDomain<?> valueDomain = new PossibleForwardDataflowDomain<>(new ReachingDefinitions());
+        ValueDomain<?> valueDomain = new PossibleForwardDataflowDomain<>(new AvailableExpressions());
         
         // we do not care about which heap domain is executed, so we can go with
         // whatever lisa considers as default implementation
@@ -52,12 +53,12 @@ public class ReachingDefinitionsTest {
         
         // fourth step: we tell lisa which directory should be used as working
         // directory, where all .dot files will be dumped
-        lisa.setWorkdir("test-outputs/reaching-definitions");
+        lisa.setWorkdir("test-outputs/available-expressions");
         
         // fifth step: we tell lisa what to analyze
         // we first parse the imp file using the imp frontend, and then we can feed
         // the result of the parsing to lisa
-        Program impProgram = IMPFrontend.processFile("reaching-definitions.imp");
+        Program impProgram = IMPFrontend.processFile("available-expressions.imp");
         lisa.setProgram(impProgram);
         
         // sixth step: run the analysis!
