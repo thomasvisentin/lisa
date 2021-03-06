@@ -2,7 +2,6 @@ package it.unive.lisa.analysis.dataflow.impl;
 
 import java.util.Collection;
 import java.util.HashSet;
-
 import it.unive.lisa.analysis.dataflow.DataflowElement;
 import it.unive.lisa.analysis.dataflow.PossibleForwardDataflowDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
