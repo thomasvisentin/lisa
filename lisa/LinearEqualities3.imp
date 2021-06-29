@@ -1,0 +1,11 @@
+Test3() {
+           def k = 0;
+           def i = 3;
+           def j = k +4 ;
+
+           while (i < 100) {
+               i = i + 3;
+               j = j + 1;
+
+           }
+       }
