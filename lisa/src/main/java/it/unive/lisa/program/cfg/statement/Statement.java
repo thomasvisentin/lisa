@@ -2,13 +2,13 @@ package it.unive.lisa.program.cfg.statement;
 
 import it.unive.lisa.analysis.AbstractState;
 import it.unive.lisa.analysis.AnalysisState;
+import it.unive.lisa.analysis.HeapDomain;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.StatementStore;
-import it.unive.lisa.analysis.heap.HeapDomain;
-import it.unive.lisa.analysis.value.ValueDomain;
-import it.unive.lisa.interprocedural.InterproceduralAnalysis;
+import it.unive.lisa.analysis.ValueDomain;
+import it.unive.lisa.callgraph.CallGraph;
+import it.unive.lisa.program.CodeElement;
 import it.unive.lisa.program.cfg.CFG;
-import it.unive.lisa.program.cfg.CodeLocation;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.program.cfg.edge.Edge;
 import it.unive.lisa.util.datastructures.graph.Node;
@@ -19,7 +19,7 @@ import java.util.Objects;
  * 
  * @author <a href="mailto:luca.negrini@unive.it">Luca Negrini</a>
  */
-public abstract class Statement implements Node<Statement, Edge, CFG>, ProgramPoint, Comparable<Statement> {
+public abstract class Statement extends CodeElement implements Node<Statement, Edge, CFG>, ProgramPoint {
 
 	/**
 	 * The cfg containing this statement.
@@ -31,20 +31,21 @@ public abstract class Statement implements Node<Statement, Edge, CFG>, ProgramPo
 	 */
 	protected int offset;
 
-	private final CodeLocation location;
-
 	/**
 	 * Builds a statement happening at the given source location.
 	 * 
-	 * @param cfg      the cfg that this statement belongs to
-	 * @param location the location where this statement is defined within the
-	 *                     source file. If unknown, use {@code null}
+	 * @param cfg        the cfg that this statement belongs to
+	 * @param sourceFile the source file where this statement happens. If
+	 *                       unknown, use {@code null}
+	 * @param line       the line number where this statement happens in the
+	 *                       source file. If unknown, use {@code -1}
+	 * @param col        the column where this statement happens in the source
+	 *                       file. If unknown, use {@code -1}
 	 */
-	protected Statement(CFG cfg, CodeLocation location) {
+	protected Statement(CFG cfg, String sourceFile, int line, int col) {
+		super(sourceFile, line, col);
 		Objects.requireNonNull(cfg, "Containing CFG cannot be null");
-		Objects.requireNonNull(location, "The location of a statement cannot be null");
 		this.cfg = cfg;
-		this.location = location;
 		this.offset = -1;
 	}
 
@@ -87,9 +88,8 @@ public abstract class Statement implements Node<Statement, Edge, CFG>, ProgramPo
 	@Override
 	public int hashCode() {
 		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((location == null) ? 0 : location.hashCode());
-		return result;
+		int result = super.hashCode();
+		return prime * result;
 	}
 
 	/**
@@ -115,10 +115,7 @@ public abstract class Statement implements Node<Statement, Edge, CFG>, ProgramPo
 			return false;
 		if (getClass() != st.getClass())
 			return false;
-		if (location == null) {
-			if (st.location == null)
-				return true;
-		} else if (!location.equals(st.location))
+		if (!super.equals(st)) // checking source code location
 			return false;
 		return true;
 	}
@@ -130,22 +127,20 @@ public abstract class Statement implements Node<Statement, Edge, CFG>, ProgramPo
 	 * Computes the semantics of the statement, expressing how semantic
 	 * information is transformed by the execution of this statement. This
 	 * method is also responsible for recursively invoking the
-	 * {@link #semantics(AnalysisState, InterproceduralAnalysis, StatementStore)}
-	 * of each nested {@link Expression}, saving the result of each call in
+	 * {@link #semantics(AnalysisState, CallGraph, StatementStore)} of each
+	 * nested {@link Expression}, saving the result of each call in
 	 * {@code expressions}.
 	 * 
-	 * @param <A>             the type of {@link AbstractState}
-	 * @param <H>             the type of the {@link HeapDomain}
-	 * @param <V>             the type of the {@link ValueDomain}
-	 * @param entryState      the entry state that represents the abstract
-	 *                            values of each program variable and memory
-	 *                            location when the execution reaches this
-	 *                            statement
-	 * @param interprocedural the interprocedural analysis of the program to
-	 *                            analyze
-	 * @param expressions     the cache where analysis states of intermediate
-	 *                            expressions must be stored
-	 *
+	 * @param <A>         the type of {@link AbstractState}
+	 * @param <H>         the type of the {@link HeapDomain}
+	 * @param <V>         the type of the {@link ValueDomain}
+	 * @param entryState  the entry state that represents the abstract values of
+	 *                        each program variable and memory location when the
+	 *                        execution reaches this statement
+	 * @param callGraph   the call graph of the program to analyze
+	 * @param expressions the cache where analysis states of intermediate
+	 *                        expressions must be stored
+	 * 
 	 * @return the {@link AnalysisState} representing the abstract result of the
 	 *             execution of this statement
 	 * 
@@ -154,17 +149,6 @@ public abstract class Statement implements Node<Statement, Edge, CFG>, ProgramPo
 	public abstract <A extends AbstractState<A, H, V>,
 			H extends HeapDomain<H>,
 			V extends ValueDomain<V>> AnalysisState<A, H, V> semantics(
-					AnalysisState<A, H, V> entryState, InterproceduralAnalysis<A, H, V> interprocedural,
-					StatementStore<A, H, V> expressions)
+					AnalysisState<A, H, V> entryState, CallGraph callGraph, StatementStore<A, H, V> expressions)
 					throws SemanticException;
-
-	@Override
-	public CodeLocation getLocation() {
-		return location;
-	}
-
-	@Override
-	public int compareTo(Statement o) {
-		return location.compareTo(o.location);
-	}
 }

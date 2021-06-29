@@ -24,22 +24,15 @@ public class IntType implements NumericType {
 
 	@Override
 	public boolean canBeAssignedTo(Type other) {
-		return other.isNumericType() || other.isUntyped();
+		return (other.isNumericType() && (other.asNumericType().is32Bits() || other.asNumericType().is64Bits()))
+				|| other.isUntyped();
 	}
 
 	@Override
 	public Type commonSupertype(Type other) {
-		if (!other.isNumericType())
-			return Untyped.INSTANCE;
-
-		NumericType o = other.asNumericType();
-		if (o.is64Bits())
-			return o;
-
-		if (!o.isIntegral())
-			return o;
-
-		return this;
+		return other.isNumericType()
+				? (canBeAssignedTo(other) ? other : other.canBeAssignedTo(this) ? this : Untyped.INSTANCE)
+				: Untyped.INSTANCE;
 	}
 
 	@Override
@@ -49,13 +42,12 @@ public class IntType implements NumericType {
 
 	@Override
 	public boolean equals(Object other) {
-		return other instanceof NumericType && ((NumericType) other).is32Bits() && ((NumericType) other).isIntegral()
-				&& !((NumericType) other).isUnsigned();
+		return other instanceof NumericType && ((NumericType) other).is32Bits();
 	}
 
 	@Override
 	public int hashCode() {
-		return IntType.class.getName().hashCode();
+		return NumericType.class.getName().hashCode();
 	}
 
 	@Override
@@ -81,11 +73,6 @@ public class IntType implements NumericType {
 	@Override
 	public boolean isUnsigned() {
 		return false;
-	}
-
-	@Override
-	public boolean isIntegral() {
-		return true;
 	}
 
 	@Override

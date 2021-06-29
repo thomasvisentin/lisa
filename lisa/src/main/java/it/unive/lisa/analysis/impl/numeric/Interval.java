@@ -5,18 +5,11 @@ import it.unive.lisa.analysis.Lattice;
 import it.unive.lisa.analysis.SemanticDomain.Satisfiability;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
-import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
-import it.unive.lisa.analysis.representation.DomainRepresentation;
-import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.BinaryOperator;
 import it.unive.lisa.symbolic.value.Constant;
-import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.TernaryOperator;
 import it.unive.lisa.symbolic.value.UnaryOperator;
-import it.unive.lisa.symbolic.value.ValueExpression;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,38 +28,30 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class Interval extends BaseNonRelationalValueDomain<Interval> {
 
-	private static final Interval TOP = new Interval(null, null, true);
-	private static final Interval BOTTOM = new Interval(null, null, false);
+	private static final Interval TOP = new Interval(null, null, true, false);
+	private static final Interval BOTTOM = new Interval(null, null, false, true);
 
-	private final boolean isTop;
+	private final boolean isTop, isBottom;
 
 	private final Integer low;
 	private final Integer high;
 
-	private Interval(Integer low, Integer high, boolean isTop) {
+	private Interval(Integer low, Integer high, boolean isTop, boolean isBottom) {
 		this.low = low;
 		this.high = high;
 		this.isTop = isTop;
+		this.isBottom = isBottom;
 	}
 
-	/**
-	 * Builds an interval from its low bound and high bound. Call this
-	 * constructor iff {@code low} and {@code high} are not both null. If you
-	 * need to build top or bottom elements, call {@link Interval#top()} and
-	 * {@link Interval#bottom()}, respectively.
-	 * 
-	 * @param low  the low bound
-	 * @param high the high bound
-	 */
-	public Interval(Integer low, Integer high) {
-		this(low, high, false);
+	private Interval(Integer low, Integer high) {
+		this(low, high, false, false);
 	}
 
 	/**
 	 * Builds the top interval.
 	 */
 	public Interval() {
-		this(null, null, true);
+		this(null, null, true, false);
 	}
 
 	@Override
@@ -76,7 +61,7 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 
 	@Override
 	public boolean isTop() {
-		return isTop && low == null && low == high;
+		return isTop;
 	}
 
 	@Override
@@ -85,37 +70,13 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 	}
 
 	@Override
-	public boolean isBottom() {
-		return !isTop && low == null && low == high;
-	}
-
-	/**
-	 * Yields the high bound of this interval.
-	 * 
-	 * @return the high bound of this interval.
-	 */
-	public Integer getHigh() {
-		return high;
-	}
-
-	/**
-	 * Yields the low bound of this interval.
-	 * 
-	 * @return the low bound of this interval.
-	 */
-	public Integer getLow() {
-		return low;
-	}
-
-	@Override
-	public DomainRepresentation representation() {
-		if (isBottom())
-			return Lattice.BOTTOM_REPR;
+	public String representation() {
 		if (isTop())
-			return Lattice.TOP_REPR;
+			return Lattice.TOP_STRING;
+		else if (isBottom())
+			return Lattice.BOTTOM_STRING;
 
-		return new StringRepresentation("[" + (lowIsMinusInfinity() ? "-Inf" : low) + ", "
-				+ (highIsPlusInfinity() ? "+Inf" : high) + "]");
+		return "[" + (lowIsMinusInfinity() ? "-Inf" : low) + ", " + (highIsPlusInfinity() ? "+Inf" : high) + "]";
 	}
 
 	@Override
@@ -135,10 +96,9 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 
 	@Override
 	protected Interval evalUnaryExpression(UnaryOperator operator, Interval arg, ProgramPoint pp) {
+
 		switch (operator) {
 		case NUMERIC_NEG:
-			if (arg.isTop())
-				return top();
 			return arg.mul(new Interval(-1, -1));
 		case STRING_LENGTH:
 			return new Interval(0, null);
@@ -147,42 +107,16 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 		}
 	}
 
-	private boolean is(int n) {
-		if (low == null || high == null)
-			return false;
-
-		return low == n && high == n;
-	}
-
 	@Override
 	protected Interval evalBinaryExpression(BinaryOperator operator, Interval left, Interval right, ProgramPoint pp) {
 		switch (operator) {
 		case NUMERIC_ADD:
-			if (left.isTop() || right.isTop())
-				return top();
 			return left.plus(right);
 		case NUMERIC_SUB:
-			if (left.isTop() || right.isTop())
-				return top();
 			return left.diff(right);
 		case NUMERIC_MUL:
-			if (left.is(0) || right.is(0))
-				return new Interval(0, 0);
-
-			if (left.isTop() || right.isTop())
-				return top();
-
 			return left.mul(right);
 		case NUMERIC_DIV:
-			if (right.is(0))
-				return bottom();
-
-			if (left.is(0))
-				return new Interval(0, 0);
-
-			if (left.isTop() || right.isTop())
-				return top();
-
 			return left.div(right);
 		case NUMERIC_MOD:
 			return top();
@@ -201,18 +135,7 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 	protected Interval lubAux(Interval other) throws SemanticException {
 		Integer newLow = lowIsMinusInfinity() || other.lowIsMinusInfinity() ? null : Math.min(low, other.low);
 		Integer newHigh = highIsPlusInfinity() || other.highIsPlusInfinity() ? null : Math.max(high, other.high);
-		return newLow == null && newLow == newHigh ? top() : new Interval(newLow, newHigh);
-	}
-
-	@Override
-	public Interval glbAux(Interval other) {
-		Integer newLow = lowIsMinusInfinity() ? other.low : other.lowIsMinusInfinity() ? low : Math.max(low, other.low);
-		Integer newHigh = highIsPlusInfinity() ? other.high
-				: other.highIsPlusInfinity() ? high : Math.min(high, other.high);
-
-		if (newLow != null && newHigh != null && newLow > newHigh)
-			return bottom();
-		return newLow == null && newLow == newHigh ? top() : new Interval(newLow, newHigh);
+		return new Interval(newLow, newHigh);
 	}
 
 	@Override
@@ -228,12 +151,44 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 		else
 			newLow = other.low;
 
-		return newLow == null && newLow == newHigh ? top() : new Interval(newLow, newHigh);
+		return new Interval(newLow, newHigh);
 	}
 
 	@Override
 	protected boolean lessOrEqualAux(Interval other) throws SemanticException {
 		return geqLow(low, other.low) && leqHigh(high, other.high);
+	}
+
+	@Override
+	protected Satisfiability satisfiesAbstractValue(Interval value, ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
+	}
+
+	@Override
+	protected Satisfiability satisfiesNullConstant(ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
+	}
+
+	@Override
+	protected Satisfiability satisfiesNonNullConstant(Constant constant, ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
+	}
+
+	@Override
+	protected Satisfiability satisfiesUnaryExpression(UnaryOperator operator, Interval arg, ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
+	}
+
+	@Override
+	protected Satisfiability satisfiesBinaryExpression(BinaryOperator operator, Interval left, Interval right,
+			ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
+	}
+
+	@Override
+	protected Satisfiability satisfiesTernaryExpression(TernaryOperator operator, Interval left, Interval middle,
+			Interval right, ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
 	}
 
 	private boolean lowIsMinusInfinity() {
@@ -257,7 +212,7 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 		else
 			newHigh = high + other.high;
 
-		return newLow == null && newLow == newHigh ? top() : new Interval(newLow, newHigh);
+		return new Interval(newLow, newHigh);
 	}
 
 	private Interval diff(Interval other) {
@@ -273,7 +228,7 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 		else
 			newHigh = high - other.low;
 
-		return newLow == null && newLow == newHigh ? top() : new Interval(newLow, newHigh);
+		return new Interval(newLow, newHigh);
 	}
 
 	private Interval mul(Interval other) {
@@ -288,23 +243,19 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 
 		AtomicBoolean lowInf = new AtomicBoolean(false), highInf = new AtomicBoolean(false);
 
-		// x1 * y1
+		// l1 * l2
 		multiplyBounds(boundSet, l1, l2, lowInf, highInf);
 
 		// x1 * y2
 		multiplyBounds(boundSet, l1, h2, lowInf, highInf);
 
 		// x2 * y1
-		multiplyBounds(boundSet, h1, l2, lowInf, highInf);
+		multiplyBounds(boundSet, h2, l2, lowInf, highInf);
 
 		// x2 * y2
 		multiplyBounds(boundSet, h1, h2, lowInf, highInf);
 
-		Interval result = new Interval(lowInf.get() ? null : boundSet.first(), highInf.get() ? null : boundSet.last());
-		if (result.low == null && result.high == result.low)
-			return top();
-		else
-			return result;
+		return new Interval(lowInf.get() ? null : boundSet.first(), highInf.get() ? null : boundSet.last());
 	}
 
 	private Interval div(Interval other) {
@@ -331,93 +282,7 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 		// x2 / y2
 		divideBounds(boundSet, h1, h2, lowInf, highInf);
 
-		Interval result = new Interval(lowInf.get() ? null : boundSet.first(), highInf.get() ? null : boundSet.last());
-		if (result.low == null && result.high == result.low)
-			return top();
-		else
-			return result;
-	}
-
-	private boolean isSingleton() {
-		return low != null && low == high;
-	}
-
-	@Override
-	protected Satisfiability satisfiesBinaryExpression(BinaryOperator operator, Interval left, Interval right,
-			ProgramPoint pp) {
-
-		if (left.isTop() || right.isTop())
-			return Satisfiability.UNKNOWN;
-
-		switch (operator) {
-		case COMPARISON_EQ:
-			Interval glb = null;
-			try {
-				glb = left.glb(right);
-			} catch (SemanticException e) {
-				e.printStackTrace();
-			}
-			if (glb.isBottom())
-				return Satisfiability.NOT_SATISFIED;
-			else if (left.isSingleton() && left.equals(right))
-				return Satisfiability.SATISFIED;
-			return Satisfiability.UNKNOWN;
-		case COMPARISON_GE:
-			return satisfiesBinaryExpression(BinaryOperator.COMPARISON_LE, right, left, pp);
-		case COMPARISON_GT:
-			return satisfiesBinaryExpression(BinaryOperator.COMPARISON_LT, right, left, pp);
-		case COMPARISON_LE:
-			Interval firstBound = right.high == null ? top() : new Interval(null, right.high);
-			Interval secondBound = left.low == null ? top() : new Interval(left.low, null);
-
-			Interval firstCheck = null;
-			Interval secondCheck = null;
-
-			try {
-				firstCheck = firstBound.glb(left);
-				secondCheck = secondBound.glb(right);
-			} catch (SemanticException e) {
-				e.printStackTrace();
-			}
-
-			if (firstCheck.isBottom() || secondCheck.isBottom())
-				return Satisfiability.NOT_SATISFIED;
-
-			if (firstCheck.equals(left) && secondCheck.equals(right))
-				return Satisfiability.SATISFIED;
-			return Satisfiability.UNKNOWN;
-		case COMPARISON_LT:
-			firstBound = right.high == null ? top() : new Interval(null, right.high - 1);
-			secondBound = left.low == null ? top() : new Interval(left.low + 1, null);
-
-			firstCheck = null;
-			secondCheck = null;
-
-			try {
-				firstCheck = firstBound.glb(left);
-				secondCheck = secondBound.glb(right);
-			} catch (SemanticException e) {
-				e.printStackTrace();
-			}
-
-			if (firstCheck.isBottom() || secondCheck.isBottom())
-				return Satisfiability.NOT_SATISFIED;
-			if (firstCheck.equals(left) && secondCheck.equals(right))
-				return Satisfiability.SATISFIED;
-			return Satisfiability.UNKNOWN;
-		case COMPARISON_NE:
-			glb = null;
-			try {
-				glb = left.glb(right);
-			} catch (SemanticException e) {
-				e.printStackTrace();
-			}
-			if (glb.isBottom())
-				return Satisfiability.SATISFIED;
-			return Satisfiability.UNKNOWN;
-		default:
-			return Satisfiability.UNKNOWN;
-		}
+		return new Interval(lowInf.get() ? null : boundSet.first(), highInf.get() ? null : boundSet.last());
 	}
 
 	private void multiplyBounds(SortedSet<Integer> boundSet, Integer i, Integer j, AtomicBoolean lowInf,
@@ -534,6 +399,7 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((high == null) ? 0 : high.hashCode());
+		result = prime * result + (isBottom ? 1231 : 1237);
 		result = prime * result + (isTop ? 1231 : 1237);
 		result = prime * result + ((low == null) ? 0 : low.hashCode());
 		return result;
@@ -553,6 +419,8 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 				return false;
 		} else if (!high.equals(other.high))
 			return false;
+		if (isBottom != other.isBottom)
+			return false;
 		if (isTop != other.isTop)
 			return false;
 		if (low == null) {
@@ -560,94 +428,6 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 				return false;
 		} else if (!low.equals(other.low))
 			return false;
-		return true;
-	}
-
-	@Override
-	protected ValueEnvironment<Interval> assumeBinaryExpression(
-			ValueEnvironment<Interval> environment, BinaryOperator operator, ValueExpression left,
-			ValueExpression right, ProgramPoint pp) throws SemanticException {
-
-		Map<Identifier, Interval> map = null;
-
-		if (environment.getMap() == null)
-			map = new HashMap<Identifier, Interval>();
-		else
-			map = new HashMap<>(environment.getMap());
-
-		switch (operator) {
-		case COMPARISON_EQ:
-			if (left instanceof Identifier)
-				environment = environment.assign((Identifier) left, right, pp);
-			else if (right instanceof Identifier)
-				environment = environment.assign((Identifier) right, left, pp);
-			return environment;
-		case COMPARISON_GE:
-			if (left instanceof Identifier) {
-				Interval rightEval = eval(right, environment, pp);
-				if (rightEval.lowIsMinusInfinity())
-					return environment;
-
-				Interval bound = new Interval(rightEval.low, null);
-				map.put((Identifier) left, bound);
-				return new ValueEnvironment<Interval>(bottom(), map);
-			} else if (right instanceof Identifier) {
-				Interval leftEval = eval(left, environment, pp);
-				Interval bound = leftEval.lowIsMinusInfinity() ? leftEval : new Interval(null, leftEval.low);
-				map.put((Identifier) right, bound);
-				return new ValueEnvironment<Interval>(bottom(), map);
-			} else
-				return environment;
-		case COMPARISON_GT:
-			if (left instanceof Identifier) {
-				Interval rightEval = eval(right, environment, pp);
-				if (rightEval.lowIsMinusInfinity())
-					return environment;
-
-				Interval bound = new Interval(rightEval.low + 1, null);
-				map.put((Identifier) left, bound);
-				return new ValueEnvironment<Interval>(bottom(), map);
-			} else if (right instanceof Identifier) {
-				Interval leftEval = eval(left, environment, pp);
-				Interval bound = leftEval.lowIsMinusInfinity() ? leftEval : new Interval(null, leftEval.low - 1);
-				map.put((Identifier) right, bound);
-				return new ValueEnvironment<Interval>(bottom(), map);
-			} else
-				return environment;
-		case COMPARISON_LE:
-			if (left instanceof Identifier) {
-				Interval rightEval = eval(right, environment, pp);
-				Interval bound = rightEval.lowIsMinusInfinity() ? rightEval : new Interval(null, rightEval.low);
-				map.put((Identifier) left, bound);
-				return new ValueEnvironment<Interval>(bottom(), map);
-			} else if (right instanceof Identifier) {
-				Interval leftEval = eval(left, environment, pp);
-				if (leftEval.lowIsMinusInfinity())
-					return environment;
-
-				Interval bound = new Interval(leftEval.low, null);
-				map.put((Identifier) right, bound);
-				return new ValueEnvironment<Interval>(bottom(), map);
-			} else
-				return environment;
-		case COMPARISON_LT:
-			if (left instanceof Identifier) {
-				Interval rightEval = eval(right, environment, pp);
-				Interval bound = rightEval.lowIsMinusInfinity() ? rightEval : new Interval(null, rightEval.low - 1);
-				map.put((Identifier) left, bound);
-				return new ValueEnvironment<Interval>(bottom(), map);
-			} else if (right instanceof Identifier) {
-				Interval leftEval = eval(left, environment, pp);
-				if (leftEval.lowIsMinusInfinity())
-					return environment;
-
-				Interval bound = new Interval(leftEval.low + 1, null);
-				map.put((Identifier) right, bound);
-				return new ValueEnvironment<Interval>(bottom(), map);
-			} else
-				return environment;
-		default:
-			return environment;
-		}
+		return isTop && other.isTop;
 	}
 }

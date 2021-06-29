@@ -2,8 +2,6 @@ package it.unive.lisa.program.cfg;
 
 import it.unive.lisa.program.CodeElement;
 import it.unive.lisa.program.Unit;
-import it.unive.lisa.program.annotations.Annotation;
-import it.unive.lisa.program.annotations.Annotations;
 import it.unive.lisa.type.Type;
 import it.unive.lisa.type.Untyped;
 import java.util.Arrays;
@@ -20,7 +18,7 @@ import org.apache.commons.lang3.StringUtils;
  * 
  * @author <a href="mailto:luca.negrini@unive.it">Luca Negrini</a>
  */
-public class CFGDescriptor implements CodeElement {
+public class CFGDescriptor extends CodeElement {
 
 	/**
 	 * The unit the cfg belongs to
@@ -61,19 +59,11 @@ public class CFGDescriptor implements CodeElement {
 
 	private final Collection<CodeMember> overrides;
 
-	private Annotations annotations;
-
 	/**
-	 * The location where the cfg described by this descriptor appear in the
-	 * source file
-	 */
-	private final CodeLocation location;
-
-	/**
-	 * Builds the descriptor with {@link Untyped} return type.
+	 * Builds the descriptor for a method that is defined at an unknown location
+	 * (i.e. no source file/line/column is available) and with untyped return
+	 * type, that is its type is {@link Untyped#INSTANCE}.
 	 * 
-	 * @param location the location where the cfg associated is define within
-	 *                     the source file. If unknown use {@code null}
 	 * @param unit     the {@link Unit} containing the cfg associated to this
 	 *                     descriptor
 	 * @param instance whether or not the cfg associated to this descriptor is
@@ -81,16 +71,14 @@ public class CFGDescriptor implements CodeElement {
 	 * @param name     the name of the CFG associated with this descriptor
 	 * @param args     the arguments of the CFG associated with this descriptor
 	 */
-	public CFGDescriptor(CodeLocation location, Unit unit, boolean instance, String name,
-			Parameter... args) {
-		this(location, unit, instance, name, Untyped.INSTANCE, args);
+	public CFGDescriptor(Unit unit, boolean instance, String name, Parameter... args) {
+		this(null, -1, -1, unit, instance, name, Untyped.INSTANCE, args);
 	}
 
 	/**
-	 * Builds the descriptor.
+	 * Builds the descriptor for a method that is defined at an unknown location
+	 * (i.e. no source file/line/column is available).
 	 * 
-	 * @param location   the location where the cfg associated is define within
-	 *                       the source file, if unknown use {@code null}
 	 * @param unit       the {@link Unit} containing the cfg associated to this
 	 *                       descriptor
 	 * @param instance   whether or not the cfg associated to this descriptor is
@@ -101,44 +89,69 @@ public class CFGDescriptor implements CodeElement {
 	 * @param args       the arguments of the CFG associated with this
 	 *                       descriptor
 	 */
-	public CFGDescriptor(CodeLocation location, Unit unit, boolean instance, String name,
-			Type returnType, Parameter... args) {
-		this(location, unit, instance, name, returnType, new Annotations(), args);
+	public CFGDescriptor(Unit unit, boolean instance, String name, Type returnType, Parameter... args) {
+		this(null, -1, -1, unit, instance, name, returnType, args);
+	}
+
+	/**
+	 * Builds the descriptor with {@link Untyped} return type.
+	 * 
+	 * @param sourceFile the source file where the CFG associated with this
+	 *                       descriptor is defined. If unknown, use {@code null}
+	 * @param line       the line number where the CFG associated with this
+	 *                       descriptor is defined in the source file. If
+	 *                       unknown, use {@code -1}
+	 * @param col        the column where the CFG associated with this
+	 *                       descriptor is defined in the source file. If
+	 *                       unknown, use {@code -1}
+	 * @param unit       the {@link Unit} containing the cfg associated to this
+	 *                       descriptor
+	 * @param instance   whether or not the cfg associated to this descriptor is
+	 *                       an instance cfg
+	 * @param name       the name of the CFG associated with this descriptor
+	 * @param args       the arguments of the CFG associated with this
+	 *                       descriptor
+	 */
+	public CFGDescriptor(String sourceFile, int line, int col, Unit unit, boolean instance, String name,
+			Parameter... args) {
+		this(sourceFile, line, col, unit, instance, name, Untyped.INSTANCE, args);
 	}
 
 	/**
 	 * Builds the descriptor.
 	 * 
-	 * @param location    the location where the cfg associated is define within
-	 *                        the source file, if unknown use {@code null}
-	 * @param unit        the {@link Unit} containing the cfg associated to this
-	 *                        descriptor
-	 * @param instance    whether or not the cfg associated to this descriptor
-	 *                        is an instance cfg
-	 * @param name        the name of the CFG associated with this descriptor
-	 * @param returnType  the return type of the CFG associated with this
-	 *                        descriptor
-	 * @param annotations the annotations of the CFG associated with this
-	 *                        descriptor
-	 * @param args        the arguments of the CFG associated with this
-	 *                        descriptor
+	 * @param sourceFile the source file where the CFG associated with this
+	 *                       descriptor is defined. If unknown, use {@code null}
+	 * @param line       the line number where the CFG associated with this
+	 *                       descriptor is defined in the source file. If
+	 *                       unknown, use {@code -1}
+	 * @param col        the column where the CFG associated with this
+	 *                       descriptor is defined in the source file. If
+	 *                       unknown, use {@code -1}
+	 * @param unit       the {@link Unit} containing the cfg associated to this
+	 *                       descriptor
+	 * @param instance   whether or not the cfg associated to this descriptor is
+	 *                       an instance cfg
+	 * @param name       the name of the CFG associated with this descriptor
+	 * @param returnType the return type of the CFG associated with this
+	 *                       descriptor
+	 * @param args       the arguments of the CFG associated with this
+	 *                       descriptor
 	 */
-	public CFGDescriptor(CodeLocation location, Unit unit, boolean instance, String name,
-			Type returnType, Annotations annotations, Parameter... args) {
+	public CFGDescriptor(String sourceFile, int line, int col, Unit unit, boolean instance, String name,
+			Type returnType, Parameter... args) {
+		super(sourceFile, line, col);
 		Objects.requireNonNull(unit, "The unit of a CFG cannot be null");
 		Objects.requireNonNull(name, "The name of a CFG cannot be null");
 		Objects.requireNonNull(args, "The array of argument names of a CFG cannot be null");
 		Objects.requireNonNull(returnType, "The return type of a CFG cannot be null");
-		Objects.requireNonNull(location, "The location of a CFG cannot be null");
 		for (int i = 0; i < args.length; i++)
 			Objects.requireNonNull(args[i], "The " + i + "-th argument name of a CFG cannot be null");
-		this.location = location;
 		this.unit = unit;
 		this.name = name;
 		this.args = args;
 		this.returnType = returnType;
 		this.instance = instance;
-		this.annotations = annotations;
 
 		overridable = instance;
 		overriddenBy = new HashSet<>();
@@ -147,7 +160,7 @@ public class CFGDescriptor implements CodeElement {
 		this.variables = new LinkedList<>();
 		int i = 0;
 		for (Parameter arg : args)
-			addVariable(new VariableTableEntry(arg.getLocation(), i++, null, null,
+			addVariable(new VariableTableEntry(arg.getSourceFile(), arg.getLine(), arg.getCol(), i++, null, null,
 					arg.getName(), arg.getStaticType()));
 	}
 
@@ -327,7 +340,6 @@ public class CFGDescriptor implements CodeElement {
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + ((returnType == null) ? 0 : returnType.hashCode());
 		result = prime * result + ((variables == null) ? 0 : variables.hashCode());
-		result = prime * result + ((annotations == null) ? 0 : annotations.hashCode());
 		return result;
 	}
 
@@ -364,72 +376,43 @@ public class CFGDescriptor implements CodeElement {
 				return false;
 		} else if (!variables.equals(other.variables))
 			return false;
-		if (annotations == null) {
-			if (other.annotations != null)
-				return false;
-		} else if (!annotations.equals(other.annotations))
-			return false;
 		return true;
 	}
 
 	@Override
 	public String toString() {
-		return getFullSignature() + " [at " + location + "]";
+		return getFullSignature() + " [at '" + String.valueOf(getSourceFile()) + "':" + getLine() + ":" + getCol()
+				+ "]";
 	}
 
 	/**
 	 * Checks if the signature defined by the given descriptor is matched by the
-	 * one of this descriptor. If the signature match, this roughly means that
-	 * {@code this} signature can override {@code reference}. For two signatures
-	 * to match, it is required that:
+	 * one this descriptor. For two signatures to match, it is required that:
 	 * <ul>
 	 * <li>both signatures have the same name</li>
 	 * <li>both signatures have the same number of arguments</li>
 	 * <li>for each argument, the static type of the matching signature (i.e.,
 	 * {@code this}) can be assigned to the static type of the matched signature
-	 * (i.e., {@code reference})</li>
+	 * (i.e., {@code signature})</li>
 	 * </ul>
 	 * 
-	 * @param reference the other signature to be used as reference
+	 * @param signature the other signature
 	 * 
 	 * @return {@code true} if the two signatures are compatible, {@code false}
 	 *             otherwise
 	 */
-	public boolean matchesSignature(CFGDescriptor reference) {
-		if (!name.equals(reference.name))
+	public boolean matchesSignature(CFGDescriptor signature) {
+		if (!name.equals(signature.name))
 			return false;
 
-		if (args.length != reference.args.length)
+		if (args.length != signature.args.length)
 			return false;
 
 		for (int i = 0; i < args.length; i++)
-			if (!args[i].getStaticType().canBeAssignedTo(reference.args[i].getStaticType()))
+			if (!args[i].getStaticType().canBeAssignedTo(signature.args[i].getStaticType()))
 				// TODO not sure if this is generic enough
 				return false;
 
 		return true;
-	}
-
-	@Override
-	public CodeLocation getLocation() {
-		return location;
-	}
-
-	/**
-	 * Yields the annotations of this descriptor.
-	 * 
-	 * @return the annotations of this descriptor
-	 */
-	public Annotations getAnnotations() {
-		return annotations;
-	}
-
-	/**
-	 * Adds an annotations to this descriptor.
-	 * 
-	 * @param ann the annotation to be added
-	 */
-	public void addAnnotation(Annotation ann) {
-		annotations.addAnnotation(ann);
 	}
 }

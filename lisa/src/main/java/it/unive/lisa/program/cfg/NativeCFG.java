@@ -2,7 +2,7 @@ package it.unive.lisa.program.cfg;
 
 import it.unive.lisa.AnalysisSetupException;
 import it.unive.lisa.LiSAFactory;
-import it.unive.lisa.interprocedural.callgraph.CallResolutionException;
+import it.unive.lisa.callgraph.CallResolutionException;
 import it.unive.lisa.program.cfg.statement.Expression;
 import it.unive.lisa.program.cfg.statement.NativeCall;
 import it.unive.lisa.program.cfg.statement.PluggableStatement;
@@ -75,12 +75,14 @@ public class NativeCFG implements CodeMember {
 	 */
 	public NativeCall rewrite(Statement original, Expression... params)
 			throws CallResolutionException {
-		// the extra 2 are cfg, location
-		Object[] pars = new Object[params.length + 2];
+		// the extra 4 are cfg, file, line, col
+		Object[] pars = new Object[params.length + 4];
 		pars[0] = original.getCFG();
-		pars[1] = original.getLocation();
+		pars[1] = original.getSourceFile();
+		pars[2] = original.getLine();
+		pars[3] = original.getCol();
 		for (int i = 0; i < params.length; i++)
-			pars[i + 2] = params[i];
+			pars[i + 4] = params[i];
 
 		try {
 			NativeCall instance = LiSAFactory.getInstance(construct, pars);

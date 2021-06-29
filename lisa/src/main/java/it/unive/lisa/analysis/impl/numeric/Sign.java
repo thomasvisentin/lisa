@@ -5,16 +5,11 @@ import it.unive.lisa.analysis.Lattice;
 import it.unive.lisa.analysis.SemanticDomain.Satisfiability;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
-import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
-import it.unive.lisa.analysis.representation.DomainRepresentation;
-import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.BinaryOperator;
 import it.unive.lisa.symbolic.value.Constant;
-import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.TernaryOperator;
 import it.unive.lisa.symbolic.value.UnaryOperator;
-import it.unive.lisa.symbolic.value.ValueExpression;
 
 /**
  * The basic Sign abstract domain, tracking zero, strictly positive and strictly
@@ -67,21 +62,17 @@ public class Sign extends BaseNonRelationalValueDomain<Sign> {
 	}
 
 	@Override
-	public DomainRepresentation representation() {
-		if (isBottom())
-			return Lattice.BOTTOM_REPR;
-		if (isTop())
-			return Lattice.TOP_REPR;
-
-		String repr;
-		if (this == ZERO)
-			repr = "0";
-		else if (this == POS)
-			repr = "+";
+	public String representation() {
+		if (equals(BOTTOM))
+			return Lattice.BOTTOM_STRING;
+		else if (equals(ZERO))
+			return "0";
+		else if (equals(POS))
+			return "+";
+		else if (equals(NEG))
+			return "-";
 		else
-			repr = "-";
-
-		return new StringRepresentation(repr);
+			return Lattice.TOP_STRING;
 	}
 
 	@Override
@@ -177,6 +168,12 @@ public class Sign extends BaseNonRelationalValueDomain<Sign> {
 	}
 
 	@Override
+	protected Sign evalTernaryExpression(TernaryOperator operator, Sign left, Sign middle, Sign right,
+			ProgramPoint pp) {
+		return top();
+	}
+
+	@Override
 	protected Sign lubAux(Sign other) throws SemanticException {
 		return TOP;
 	}
@@ -219,6 +216,26 @@ public class Sign extends BaseNonRelationalValueDomain<Sign> {
 		if (isTop != other.isTop)
 			return false;
 		return isTop && other.isTop;
+	}
+
+	@Override
+	protected Satisfiability satisfiesAbstractValue(Sign value, ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
+	}
+
+	@Override
+	protected Satisfiability satisfiesNullConstant(ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
+	}
+
+	@Override
+	protected Satisfiability satisfiesNonNullConstant(Constant constant, ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
+	}
+
+	@Override
+	protected Satisfiability satisfiesUnaryExpression(UnaryOperator operator, Sign arg, ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
 	}
 
 	@Override
@@ -269,70 +286,5 @@ public class Sign extends BaseNonRelationalValueDomain<Sign> {
 	protected Satisfiability satisfiesTernaryExpression(TernaryOperator operator, Sign left, Sign middle, Sign right,
 			ProgramPoint pp) {
 		return Satisfiability.UNKNOWN;
-	}
-
-	@Override
-	protected ValueEnvironment<Sign> assumeBinaryExpression(
-			ValueEnvironment<Sign> environment, BinaryOperator operator, ValueExpression left,
-			ValueExpression right, ProgramPoint pp) throws SemanticException {
-		switch (operator) {
-		case COMPARISON_EQ:
-			if (left instanceof Identifier)
-				environment = environment.assign((Identifier) left, right, pp);
-			else if (right instanceof Identifier)
-				environment = environment.assign((Identifier) right, left, pp);
-			return environment;
-		case COMPARISON_GE:
-			if (left instanceof Identifier) {
-				Sign rightSign = eval(right, environment, pp);
-				if (rightSign.isPositive())
-					environment = environment.assign((Identifier) left, right, pp);
-			} else if (right instanceof Identifier) {
-				Sign leftSign = eval(left, environment, pp);
-				if (leftSign.isNegative())
-					environment = environment.assign((Identifier) right, left, pp);
-			}
-			return environment;
-		case COMPARISON_LE:
-			if (left instanceof Identifier) {
-				Sign rightSign = eval(right, environment, pp);
-				if (rightSign.isNegative())
-					environment = environment.assign((Identifier) left, right, pp);
-			} else if (right instanceof Identifier) {
-				Sign leftSign = eval(left, environment, pp);
-				if (leftSign.isPositive())
-					environment = environment.assign((Identifier) right, left, pp);
-			}
-			return environment;
-
-		case COMPARISON_LT:
-			if (left instanceof Identifier) {
-				Sign rightSign = eval(right, environment, pp);
-				if (rightSign.isNegative() || rightSign.isZero()) // x < 0/-
-					environment = environment.assign((Identifier) left,
-							new Constant(right.getDynamicType(), -1, right.getCodeLocation()), pp);
-			} else if (right instanceof Identifier) {
-				Sign leftSign = eval(left, environment, pp);
-				if (leftSign.isPositive() || leftSign.isZero()) // 0/+ < x
-					environment = environment.assign((Identifier) right,
-							new Constant(left.getDynamicType(), 1, left.getCodeLocation()), pp);
-			}
-			return environment;
-		case COMPARISON_GT:
-			if (left instanceof Identifier) {
-				Sign rightSign = eval(right, environment, pp);
-				if (rightSign.isPositive() || rightSign.isZero()) // x > +/0
-					environment = environment.assign((Identifier) left,
-							new Constant(right.getDynamicType(), 1, right.getCodeLocation()), pp);
-			} else if (right instanceof Identifier) {
-				Sign leftSign = eval(left, environment, pp);
-				if (leftSign.isNegative() || leftSign.isZero()) // -/0 > x
-					environment = environment.assign((Identifier) right,
-							new Constant(left.getDynamicType(), -1, right.getCodeLocation()), pp);
-			}
-			return environment;
-		default:
-			return environment;
-		}
 	}
 }

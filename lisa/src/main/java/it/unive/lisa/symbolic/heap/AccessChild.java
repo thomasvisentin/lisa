@@ -1,11 +1,8 @@
 package it.unive.lisa.symbolic.heap;
 
-import it.unive.lisa.analysis.SemanticException;
-import it.unive.lisa.program.cfg.CodeLocation;
-import it.unive.lisa.symbolic.ExpressionVisitor;
 import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.type.Type;
-import it.unive.lisa.util.collections.externalSet.ExternalSet;
+import it.unive.lisa.util.collections.ExternalSet;
 
 /**
  * An expression that accesses a memory location that is a <i>child</i> of
@@ -29,20 +26,17 @@ public class AccessChild extends HeapExpression {
 	 * Builds the child access.
 	 * 
 	 * @param types     the runtime types of this expression
-	 * @param container the expression representing the parent
-	 * @param child     the expression representing the child
-	 * @param location  the code location of the statement that has generated
-	 *                      this expression
+	 * @param container the expression representing the parent memory location
+	 * @param child     the expression representing the child memory location
 	 */
-	public AccessChild(ExternalSet<Type> types, SymbolicExpression container, SymbolicExpression child,
-			CodeLocation location) {
-		super(types, location);
+	public AccessChild(ExternalSet<Type> types, SymbolicExpression container, SymbolicExpression child) {
+		super(types);
 		this.container = container;
 		this.child = child;
 	}
 
 	/**
-	 * Yields the expression representing the parent.
+	 * Yields the expression representing the parent memory location.
 	 * 
 	 * @return the container
 	 */
@@ -51,7 +45,7 @@ public class AccessChild extends HeapExpression {
 	}
 
 	/**
-	 * Yields the expression representing the child.
+	 * Yields the expression representing the child memory location.
 	 * 
 	 * @return the child
 	 */
@@ -93,12 +87,5 @@ public class AccessChild extends HeapExpression {
 	@Override
 	public String toString() {
 		return container + "->" + child;
-	}
-
-	@Override
-	public <T> T accept(ExpressionVisitor<T> visitor, Object... params) throws SemanticException {
-		T cont = container.accept(visitor, params);
-		T ch = child.accept(visitor, params);
-		return visitor.visit(this, cont, ch, params);
 	}
 }

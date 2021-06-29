@@ -1,7 +1,6 @@
 package it.unive.lisa.program.cfg.statement;
 
 import it.unive.lisa.program.cfg.CFG;
-import it.unive.lisa.program.cfg.CodeLocation;
 import it.unive.lisa.type.Type;
 import it.unive.lisa.type.Untyped;
 import java.util.Objects;
@@ -31,7 +30,7 @@ public abstract class NativeCall extends Call {
 	 * @param parameters    the parameters of this call
 	 */
 	protected NativeCall(CFG cfg, String constructName, Expression... parameters) {
-		this(cfg, constructName, Untyped.INSTANCE, parameters);
+		this(cfg, null, -1, -1, constructName, Untyped.INSTANCE, parameters);
 	}
 
 	/**
@@ -45,7 +44,7 @@ public abstract class NativeCall extends Call {
 	 * @param parameters    the parameters of this call
 	 */
 	protected NativeCall(CFG cfg, String constructName, Type staticType, Expression... parameters) {
-		this(cfg, null, constructName, staticType, parameters);
+		this(cfg, null, -1, -1, constructName, staticType, parameters);
 	}
 
 	/**
@@ -53,31 +52,39 @@ public abstract class NativeCall extends Call {
 	 * program. The static type of this call is {@link Untyped}.
 	 * 
 	 * @param cfg           the cfg that this expression belongs to
-	 * @param location      the location where the expression is defined within
-	 *                          the source file. If unknown, use {@code null}
+	 * @param sourceFile    the source file where this expression happens. If
+	 *                          unknown, use {@code null}
+	 * @param line          the line number where this expression happens in the
+	 *                          source file. If unknown, use {@code -1}
+	 * @param col           the column where this expression happens in the
+	 *                          source file. If unknown, use {@code -1}
 	 * @param constructName the name of the construct invoked by this native
 	 *                          call
 	 * @param parameters    the parameters of this call
 	 */
-	protected NativeCall(CFG cfg, CodeLocation location, String constructName,
+	protected NativeCall(CFG cfg, String sourceFile, int line, int col, String constructName,
 			Expression... parameters) {
-		this(cfg, location, constructName, Untyped.INSTANCE, parameters);
+		this(cfg, sourceFile, line, col, constructName, Untyped.INSTANCE, parameters);
 	}
 
 	/**
 	 * Builds the native call, happening at the given location in the program.
 	 * 
 	 * @param cfg           the cfg that this expression belongs to
-	 * @param location      the location where this expression is defined within
-	 *                          the source file. If unknown, use {@code null}
+	 * @param sourceFile    the source file where this expression happens. If
+	 *                          unknown, use {@code null}
+	 * @param line          the line number where this expression happens in the
+	 *                          source file. If unknown, use {@code -1}
+	 * @param col           the column where this expression happens in the
+	 *                          source file. If unknown, use {@code -1}
 	 * @param constructName the name of the construct invoked by this native
 	 *                          call
 	 * @param staticType    the static type of this call
 	 * @param parameters    the parameters of this call
 	 */
-	protected NativeCall(CFG cfg, CodeLocation location, String constructName, Type staticType,
+	protected NativeCall(CFG cfg, String sourceFile, int line, int col, String constructName, Type staticType,
 			Expression... parameters) {
-		super(cfg, location, staticType, parameters);
+		super(cfg, sourceFile, line, col, staticType, parameters);
 		Objects.requireNonNull(constructName, "The name of the native construct of a native call cannot be null");
 		this.constructName = constructName;
 	}

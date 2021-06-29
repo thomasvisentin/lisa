@@ -2,19 +2,18 @@ package it.unive.lisa.program.cfg.statement;
 
 import it.unive.lisa.analysis.AbstractState;
 import it.unive.lisa.analysis.AnalysisState;
+import it.unive.lisa.analysis.HeapDomain;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.StatementStore;
-import it.unive.lisa.analysis.heap.HeapDomain;
-import it.unive.lisa.analysis.lattices.ExpressionSet;
-import it.unive.lisa.analysis.value.ValueDomain;
-import it.unive.lisa.interprocedural.InterproceduralAnalysis;
+import it.unive.lisa.analysis.ValueDomain;
+import it.unive.lisa.callgraph.CallGraph;
 import it.unive.lisa.program.cfg.CFG;
-import it.unive.lisa.program.cfg.CodeLocation;
 import it.unive.lisa.program.cfg.edge.Edge;
 import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.type.Type;
 import it.unive.lisa.util.datastructures.graph.GraphVisitor;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -36,13 +35,17 @@ public abstract class Call extends Expression {
 	 * Builds a call happening at the given source location.
 	 * 
 	 * @param cfg        the cfg that this expression belongs to
-	 * @param location   the location where the expression is defined within the
-	 *                       source file. If unknown, use {@code null}
+	 * @param sourceFile the source file where this expression happens. If
+	 *                       unknown, use {@code null}
+	 * @param line       the line number where this expression happens in the
+	 *                       source file. If unknown, use {@code -1}
+	 * @param col        the column where this expression happens in the source
+	 *                       file. If unknown, use {@code -1}
 	 * @param parameters the parameters of this call
 	 * @param staticType the static type of this call
 	 */
-	protected Call(CFG cfg, CodeLocation location, Type staticType, Expression... parameters) {
-		super(cfg, location, staticType);
+	protected Call(CFG cfg, String sourceFile, int line, int col, Type staticType, Expression... parameters) {
+		super(cfg, sourceFile, line, col, staticType);
 		Objects.requireNonNull(parameters, "The array of parameters of a call cannot be null");
 		for (int i = 0; i < parameters.length; i++)
 			Objects.requireNonNull(parameters[i], "The " + i + "-th parameter of a call cannot be null");
@@ -125,23 +128,21 @@ public abstract class Call extends Expression {
 	public final <A extends AbstractState<A, H, V>,
 			H extends HeapDomain<H>,
 			V extends ValueDomain<V>> AnalysisState<A, H, V> semantics(
-					AnalysisState<A, H, V> entryState, InterproceduralAnalysis<A, H, V> interprocedural,
-					StatementStore<A, H, V> expressions)
+					AnalysisState<A, H, V> entryState, CallGraph callGraph, StatementStore<A, H, V> expressions)
 					throws SemanticException {
 		@SuppressWarnings("unchecked")
-		ExpressionSet<SymbolicExpression>[] computed = new ExpressionSet[parameters.length];
+		Collection<SymbolicExpression>[] computed = new Collection[parameters.length];
 
 		@SuppressWarnings("unchecked")
 		AnalysisState<A, H, V>[] paramStates = new AnalysisState[parameters.length];
 		AnalysisState<A, H, V> preState = entryState;
 		for (int i = 0; i < computed.length; i++) {
-			preState = paramStates[i] = parameters[i].semantics(preState, interprocedural, expressions);
+			preState = paramStates[i] = parameters[i].semantics(preState, callGraph, expressions);
 			expressions.put(parameters[i], paramStates[i]);
 			computed[i] = paramStates[i].getComputedExpressions();
 		}
 
-		AnalysisState<A, H, V> result = callSemantics(entryState, interprocedural, paramStates, computed);
-
+		AnalysisState<A, H, V> result = callSemantics(entryState, callGraph, paramStates, computed);
 		for (Expression param : parameters)
 			if (!param.getMetaVariables().isEmpty())
 				result = result.forgetIdentifiers(param.getMetaVariables());
@@ -153,22 +154,21 @@ public abstract class Call extends Expression {
 	 * have been computed. Meta variables from the parameters will be forgotten
 	 * after this call returns.
 	 * 
-	 * @param <A>             the type of {@link AbstractState}
-	 * @param <H>             the type of the {@link HeapDomain}
-	 * @param <V>             the type of the {@link ValueDomain}
-	 * @param entryState      the entry state of this call
-	 * @param interprocedural the interprocedural analysis of the program to
-	 *                            analyze
-	 * @param computedStates  the array of states chaining the parameters'
-	 *                            semantics evaluation starting from
-	 *                            {@code entryState}, namely
-	 *                            {@code computedState[i]} corresponds to the
-	 *                            state obtained by the evaluation of
-	 *                            {@code params[i]} in the state
-	 *                            {@code computedState[i-1]} ({@code params[0]}
-	 *                            is evaluated in {@code entryState})
-	 * @param params          the symbolic expressions representing the computed
-	 *                            values of the parameters of this call
+	 * @param <A>            the type of {@link AbstractState}
+	 * @param <H>            the type of the {@link HeapDomain}
+	 * @param <V>            the type of the {@link ValueDomain}
+	 * @param entryState     the entry state of this call
+	 * @param callGraph      the call graph of the program to analyze
+	 * @param computedStates the array of states chaining the parameters'
+	 *                           semantics evaluation starting from
+	 *                           {@code entryState}, namely
+	 *                           {@code computedState[i]} corresponds to the
+	 *                           state obtained by the evaluation of
+	 *                           {@code params[i]} in the state
+	 *                           {@code computedState[i-1]} ({@code params[0]}
+	 *                           is evaluated in {@code entryState})
+	 * @param params         the symbolic expressions representing the computed
+	 *                           values of the parameters of this call
 	 * 
 	 * @return the {@link AnalysisState} representing the abstract result of the
 	 *             execution of this call
@@ -179,8 +179,8 @@ public abstract class Call extends Expression {
 			H extends HeapDomain<H>,
 			V extends ValueDomain<V>> AnalysisState<A, H, V> callSemantics(
 					AnalysisState<A, H, V> entryState,
-					InterproceduralAnalysis<A, H, V> interprocedural, AnalysisState<A, H, V>[] computedStates,
-					ExpressionSet<SymbolicExpression>[] params)
+					CallGraph callGraph, AnalysisState<A, H, V>[] computedStates,
+					Collection<SymbolicExpression>[] params)
 					throws SemanticException;
 
 	@Override

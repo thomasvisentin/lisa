@@ -1,8 +1,5 @@
 package it.unive.lisa.analysis;
 
-import it.unive.lisa.analysis.heap.HeapDomain;
-import it.unive.lisa.analysis.lattices.FunctionalLattice;
-import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.program.cfg.statement.Statement;
 
 /**

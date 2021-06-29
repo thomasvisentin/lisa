@@ -1,7 +1,6 @@
 package it.unive.lisa.program.cfg.statement;
 
 import it.unive.lisa.program.cfg.CFG;
-import it.unive.lisa.program.cfg.CodeLocation;
 import it.unive.lisa.program.cfg.edge.Edge;
 import it.unive.lisa.util.datastructures.graph.GraphVisitor;
 import java.util.Objects;
@@ -23,7 +22,7 @@ public abstract class UnaryStatement extends Statement {
 	 * @param expression the argument of this statement
 	 */
 	public UnaryStatement(CFG cfg, Expression expression) {
-		this(cfg, null, expression);
+		this(cfg, null, -1, -1, expression);
 	}
 
 	/**
@@ -31,12 +30,16 @@ public abstract class UnaryStatement extends Statement {
 	 * program.
 	 * 
 	 * @param cfg        the cfg that this statement belongs to
-	 * @param location   the location where this statement is defined within the
-	 *                       source file. If unknown, use {@code null}
+	 * @param sourceFile the source file where this statement happens. If
+	 *                       unknown, use {@code null}
+	 * @param line       the line number where this statement happens in the
+	 *                       source file. If unknown, use {@code -1}
+	 * @param col        the column where this statement happens in the source
+	 *                       file. If unknown, use {@code -1}
 	 * @param expression the argument of this statement
 	 */
-	public UnaryStatement(CFG cfg, CodeLocation location, Expression expression) {
-		super(cfg, location);
+	public UnaryStatement(CFG cfg, String sourceFile, int line, int col, Expression expression) {
+		super(cfg, sourceFile, line, col);
 		Objects.requireNonNull(expression, "The argument of a unary statement cannot be null");
 		this.expression = expression;
 		expression.setParentStatement(this);

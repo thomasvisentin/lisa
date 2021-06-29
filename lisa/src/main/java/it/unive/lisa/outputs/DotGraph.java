@@ -115,8 +115,6 @@ public abstract class DotGraph<N extends Node<N, E, G>, E extends Edge<N, E, G>,
 
 	private final org.graphstream.graph.Graph graph, legend;
 
-	private final String title;
-
 	private final Map<N, Long> codes = new IdentityHashMap<>();
 
 	private long nextCode = 0;
@@ -124,13 +122,11 @@ public abstract class DotGraph<N extends Node<N, E, G>, E extends Edge<N, E, G>,
 	/**
 	 * Builds a graph.
 	 * 
-	 * @param title  the title of the graph, if any
 	 * @param legend the legend to append to the graph, if any
 	 */
-	protected DotGraph(String title, org.graphstream.graph.Graph legend) {
+	protected DotGraph(org.graphstream.graph.Graph legend) {
 		this.graph = new MultiGraph("graph");
 		this.legend = legend;
-		this.title = title;
 	}
 
 	/**
@@ -344,10 +340,6 @@ public abstract class DotGraph<N extends Node<N, E, G>, E extends Edge<N, E, G>,
 		try (BufferedReader br = new BufferedReader(reader); StringWriter writer = new StringWriter();) {
 			String line;
 			while ((line = br.readLine()) != null) {
-				if (line.trim().startsWith("label"))
-					// skip graph title
-					continue;
-
 				int i = line.indexOf(sentinel);
 				if (i != -1) {
 					writer.append(line.substring(0, i));
@@ -367,7 +359,7 @@ public abstract class DotGraph<N extends Node<N, E, G>, E extends Edge<N, E, G>,
 			content = writer.toString();
 		}
 		FileSourceDOT source = new FileSourceDOT();
-		DotGraph<N, E, G> graph = new DotGraph<>(null, null) {
+		DotGraph<N, E, G> graph = new DotGraph<>(null) {
 		};
 		source.addSink(graph.graph);
 		try (StringReader sr = new StringReader(content)) {
@@ -376,18 +368,7 @@ public abstract class DotGraph<N extends Node<N, E, G>, E extends Edge<N, E, G>,
 		return graph;
 	}
 
-	private class CustomDotSink extends FileSinkDOT {
-
-		@Override
-		protected void outputHeader() throws IOException {
-			out = (PrintWriter) output;
-			out.printf("%s {%n", "digraph");
-
-			if (title != null) {
-				out.printf("\tlabelloc=\"t\";%n");
-				out.printf("\tlabel=\"" + title + "\";%n");
-			}
-		}
+	private static class CustomDotSink extends FileSinkDOT {
 
 		@Override
 		protected String outputAttribute(String key, Object value, boolean first) {
@@ -425,7 +406,7 @@ public abstract class DotGraph<N extends Node<N, E, G>, E extends Edge<N, E, G>,
 		}
 	}
 
-	private class LegendClusterSink extends CustomDotSink {
+	private static class LegendClusterSink extends CustomDotSink {
 		@Override
 		protected void outputHeader() throws IOException {
 			out = (PrintWriter) output;

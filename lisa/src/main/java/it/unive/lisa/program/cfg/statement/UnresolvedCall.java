@@ -2,18 +2,16 @@ package it.unive.lisa.program.cfg.statement;
 
 import it.unive.lisa.analysis.AbstractState;
 import it.unive.lisa.analysis.AnalysisState;
+import it.unive.lisa.analysis.HeapDomain;
 import it.unive.lisa.analysis.SemanticException;
-import it.unive.lisa.analysis.heap.HeapDomain;
-import it.unive.lisa.analysis.lattices.ExpressionSet;
-import it.unive.lisa.analysis.value.ValueDomain;
-import it.unive.lisa.interprocedural.InterproceduralAnalysis;
-import it.unive.lisa.interprocedural.callgraph.CallGraph;
-import it.unive.lisa.interprocedural.callgraph.CallResolutionException;
+import it.unive.lisa.analysis.ValueDomain;
+import it.unive.lisa.callgraph.CallGraph;
+import it.unive.lisa.callgraph.CallResolutionException;
 import it.unive.lisa.program.cfg.CFG;
-import it.unive.lisa.program.cfg.CodeLocation;
 import it.unive.lisa.program.cfg.Parameter;
 import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.type.Untyped;
+import java.util.Collection;
 import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
@@ -133,13 +131,10 @@ public class UnresolvedCall extends Call {
 	private final boolean instanceCall;
 
 	/**
-	 * Builds the CFG call, happening at the given location in the program. The
-	 * static type of this CFGCall is the one return type of the descriptor of
-	 * {@code target}.
+	 * Builds the call. The location where this call happens is unknown (i.e. no
+	 * source file/line/column is available).
 	 * 
 	 * @param cfg          the cfg that this expression belongs to
-	 * @param location     the location where the expression is defined within
-	 *                         the source file. If unknown, use {@code null}
 	 * @param strategy     the {@link ResolutionStrategy} of the parameters of
 	 *                         this call
 	 * @param instanceCall whether or not this is a call to an instance method
@@ -147,9 +142,33 @@ public class UnresolvedCall extends Call {
 	 * @param targetName   the name of the target of this call
 	 * @param parameters   the parameters of this call
 	 */
-	public UnresolvedCall(CFG cfg, CodeLocation location, ResolutionStrategy strategy,
+	public UnresolvedCall(CFG cfg, ResolutionStrategy strategy, boolean instanceCall, String targetName,
+			Expression... parameters) {
+		this(cfg, null, -1, -1, strategy, instanceCall, targetName, parameters);
+	}
+
+	/**
+	 * Builds the CFG call, happening at the given location in the program. The
+	 * static type of this CFGCall is the one return type of the descriptor of
+	 * {@code target}.
+	 * 
+	 * @param cfg          the cfg that this expression belongs to
+	 * @param sourceFile   the source file where this expression happens. If
+	 *                         unknown, use {@code null}
+	 * @param line         the line number where this expression happens in the
+	 *                         source file. If unknown, use {@code -1}
+	 * @param col          the column where this expression happens in the
+	 *                         source file. If unknown, use {@code -1}
+	 * @param strategy     the {@link ResolutionStrategy} of the parameters of
+	 *                         this call
+	 * @param instanceCall whether or not this is a call to an instance method
+	 *                         of a unit (that can be overridden) or not.
+	 * @param targetName   the name of the target of this call
+	 * @param parameters   the parameters of this call
+	 */
+	public UnresolvedCall(CFG cfg, String sourceFile, int line, int col, ResolutionStrategy strategy,
 			boolean instanceCall, String targetName, Expression... parameters) {
-		super(cfg, location, Untyped.INSTANCE, parameters);
+		super(cfg, sourceFile, line, col, Untyped.INSTANCE, parameters);
 		Objects.requireNonNull(targetName, "The target's name of an unresolved call cannot be null");
 		this.strategy = strategy;
 		this.targetName = targetName;
@@ -219,18 +238,17 @@ public class UnresolvedCall extends Call {
 	public <A extends AbstractState<A, H, V>,
 			H extends HeapDomain<H>,
 			V extends ValueDomain<V>> AnalysisState<A, H, V> callSemantics(
-					AnalysisState<A, H, V> entryState, InterproceduralAnalysis<A, H, V> interprocedural,
-					AnalysisState<A, H, V>[] computedStates,
-					ExpressionSet<SymbolicExpression>[] params)
+					AnalysisState<A, H, V> entryState, CallGraph callGraph, AnalysisState<A, H, V>[] computedStates,
+					Collection<SymbolicExpression>[] params)
 					throws SemanticException {
 		Call resolved;
 		try {
-			resolved = interprocedural.resolve(this);
+			resolved = callGraph.resolve(this);
 		} catch (CallResolutionException e) {
 			throw new SemanticException("Unable to resolve call " + this, e);
 		}
 		resolved.setRuntimeTypes(getRuntimeTypes());
-		AnalysisState<A, H, V> result = resolved.callSemantics(entryState, interprocedural, computedStates, params);
+		AnalysisState<A, H, V> result = resolved.callSemantics(entryState, callGraph, computedStates, params);
 		getMetaVariables().addAll(resolved.getMetaVariables());
 		return result;
 	}

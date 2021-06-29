@@ -1,8 +1,6 @@
 package it.unive.lisa.analysis;
 
 import it.unive.lisa.DefaultImplementation;
-import it.unive.lisa.analysis.heap.HeapDomain;
-import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.symbolic.value.Identifier;
 

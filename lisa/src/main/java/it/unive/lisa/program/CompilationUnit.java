@@ -1,22 +1,16 @@
 package it.unive.lisa.program;
 
-import it.unive.lisa.program.annotations.Annotation;
-import it.unive.lisa.program.annotations.Annotations;
 import it.unive.lisa.program.cfg.CFG;
 import it.unive.lisa.program.cfg.CFGDescriptor;
-import it.unive.lisa.program.cfg.CodeLocation;
 import it.unive.lisa.program.cfg.CodeMember;
 import it.unive.lisa.program.cfg.NativeCFG;
-import it.unive.lisa.program.cfg.Parameter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * A compilation unit of the program to analyze. A compilation unit is a
@@ -25,12 +19,7 @@ import org.apache.commons.lang3.StringUtils;
  * 
  * @author <a href="mailto:luca.negrini@unive.it">Luca Negrini</a>
  */
-public class CompilationUnit extends Unit implements CodeElement {
-
-	/**
-	 * The location in the source file of this unit
-	 */
-	private final CodeLocation location;
+public class CompilationUnit extends Unit {
 
 	/**
 	 * The collection of compilation units this unit directly inherits from
@@ -74,22 +63,21 @@ public class CompilationUnit extends Unit implements CodeElement {
 	 */
 	private boolean hierarchyComputed;
 
-	private Annotations annotations;
-
 	/**
 	 * Builds a compilation unit, defined at the given program point.
 	 * 
-	 * @param location the location where the unit is define within the source
-	 *                     file
-	 * @param name     the name of the unit
-	 * @param sealed   whether or not this unit is sealed, meaning that it
-	 *                     cannot be used as super unit of other compilation
-	 *                     units
+	 * @param sourceFile the source file where the unit is defined
+	 * @param line       the line where the unit is defined within the source
+	 *                       file
+	 * @param col        the column where the unit is defined within the source
+	 *                       file
+	 * @param name       the name of the unit
+	 * @param sealed     whether or not this unit is sealed, meaning that it
+	 *                       cannot be used as super unit of other compilation
+	 *                       units
 	 */
-	public CompilationUnit(CodeLocation location, String name, boolean sealed) {
-		super(name);
-		Objects.requireNonNull(location, "The location of a unit cannot be null.");
-		this.location = location;
+	public CompilationUnit(String sourceFile, int line, int col, String name, boolean sealed) {
+		super(sourceFile, line, col, name);
 		this.sealed = sealed;
 		superUnits = Collections.newSetFromMap(new ConcurrentHashMap<>());
 		instances = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -97,7 +85,6 @@ public class CompilationUnit extends Unit implements CodeElement {
 		instanceCfgs = new ConcurrentHashMap<>();
 		instanceConstructs = new ConcurrentHashMap<>();
 		hierarchyComputed = false;
-		annotations = new Annotations();
 	}
 
 	/**
@@ -582,70 +569,18 @@ public class CompilationUnit extends Unit implements CodeElement {
 			if (matching.size() != 1 || matching.iterator().next() != cfg)
 				throw new ProgramValidationException(
 						cfg.getDescriptor().getSignature() + " is duplicated within unit " + this);
+
+			for (CompilationUnit s : superUnits)
+				for (CodeMember over : s.getMatchingInstanceCodeMembers(cfg.getDescriptor(), true))
+					if (over.getDescriptor().isOverridable()) {
+						cfg.getDescriptor().overrides().addAll(over.getDescriptor().overrides());
+						cfg.getDescriptor().overrides().add(over);
+						cfg.getDescriptor().overrides().forEach(c -> c.getDescriptor().overriddenBy().add(cfg));
+					} else
+						throw new ProgramValidationException(
+								this + " overrides the non-overridable cfg " + over.getDescriptor().getSignature());
 		}
 
-		for (CompilationUnit s : superUnits)
-			for (CodeMember sup : s.getInstanceCodeMembers(true)) {
-				Collection<CodeMember> overriding = getMatchingInstanceCodeMembers(sup.getDescriptor(), false);
-				if (overriding.size() > 1)
-					throw new ProgramValidationException(
-							sup.getDescriptor().getSignature() + " is overriden multiple times in unit " + this + ": "
-									+ StringUtils.join(", ", overriding));
-				else if (!overriding.isEmpty())
-					if (!sup.getDescriptor().isOverridable()) {
-						throw new ProgramValidationException(
-								this + " overrides the non-overridable cfg " + sup.getDescriptor().getSignature());
-					} else {
-						CodeMember over = overriding.iterator().next();
-						over.getDescriptor().overrides().addAll(sup.getDescriptor().overrides());
-						over.getDescriptor().overrides().add(sup);
-						over.getDescriptor().overrides().forEach(c -> c.getDescriptor().overriddenBy().add(over));
-					}
-			}
-
-		for (CompilationUnit superUnit : superUnits)
-			for (Annotation ann : superUnit.getAnnotations())
-				if (!ann.isInherited())
-					addAnnotation(ann);
-
-		for (CodeMember instCfg : getInstanceCodeMembers(false))
-			for (CodeMember matching : instCfg.getDescriptor().overrides())
-				for (Annotation ann : matching.getDescriptor().getAnnotations()) {
-					if (!ann.isInherited())
-						instCfg.getDescriptor().addAnnotation(ann);
-
-					Parameter[] args = instCfg.getDescriptor().getArgs();
-					Parameter[] superArgs = matching.getDescriptor().getArgs();
-					for (int i = 0; i < args.length; i++)
-						for (Annotation parAnn : superArgs[i].getAnnotations()) {
-							if (!parAnn.isInherited())
-								args[i].addAnnotation(parAnn);
-						}
-				}
-
 		hierarchyComputed = true;
-	}
-
-	/**
-	 * Yields the annotations of this compilation unit.
-	 * 
-	 * @return the annotations of this compilation unit
-	 */
-	public Annotations getAnnotations() {
-		return annotations;
-	}
-
-	/**
-	 * Adds an annotation to the annotations of this compilation unit.
-	 * 
-	 * @param ann the annotation to be added
-	 */
-	public void addAnnotation(Annotation ann) {
-		annotations.addAnnotation(ann);
-	}
-
-	@Override
-	public CodeLocation getLocation() {
-		return location;
 	}
 }

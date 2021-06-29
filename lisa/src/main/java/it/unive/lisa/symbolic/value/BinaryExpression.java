@@ -1,12 +1,8 @@
 package it.unive.lisa.symbolic.value;
 
-import it.unive.lisa.analysis.ScopeToken;
-import it.unive.lisa.analysis.SemanticException;
-import it.unive.lisa.program.cfg.CodeLocation;
-import it.unive.lisa.symbolic.ExpressionVisitor;
 import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.type.Type;
-import it.unive.lisa.util.collections.externalSet.ExternalSet;
+import it.unive.lisa.util.collections.ExternalSet;
 
 /**
  * A bynary expression that applies a {@link BinaryOperator} to two
@@ -38,12 +34,10 @@ public class BinaryExpression extends ValueExpression {
 	 * @param left     the left-hand side operand of this expression
 	 * @param right    the right-hand side operand of this expression
 	 * @param operator the operator to apply
-	 * @param location the code location of the statement that has generated
-	 *                     this expression
 	 */
 	public BinaryExpression(ExternalSet<Type> types, SymbolicExpression left, SymbolicExpression right,
-			BinaryOperator operator, CodeLocation location) {
-		super(types, location);
+			BinaryOperator operator) {
+		super(types);
 		this.left = left;
 		this.right = right;
 		this.operator = operator;
@@ -75,18 +69,6 @@ public class BinaryExpression extends ValueExpression {
 	 */
 	public BinaryOperator getOperator() {
 		return operator;
-	}
-
-	@Override
-	public SymbolicExpression pushScope(ScopeToken token) throws SemanticException {
-		return new BinaryExpression(this.getTypes(), left.pushScope(token), right.pushScope(token), operator,
-				getCodeLocation());
-	}
-
-	@Override
-	public SymbolicExpression popScope(ScopeToken token) throws SemanticException {
-		return new BinaryExpression(this.getTypes(), left.popScope(token), right.popScope(token), operator,
-				getCodeLocation());
 	}
 
 	@Override
@@ -126,12 +108,5 @@ public class BinaryExpression extends ValueExpression {
 	@Override
 	public String toString() {
 		return left + " " + operator + " " + right;
-	}
-
-	@Override
-	public <T> T accept(ExpressionVisitor<T> visitor, Object... params) throws SemanticException {
-		T left = this.left.accept(visitor, params);
-		T right = this.right.accept(visitor, params);
-		return visitor.visit(this, left, right, params);
 	}
 }

@@ -5,16 +5,11 @@ import it.unive.lisa.analysis.Lattice;
 import it.unive.lisa.analysis.SemanticDomain.Satisfiability;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
-import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
-import it.unive.lisa.analysis.representation.DomainRepresentation;
-import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.BinaryOperator;
 import it.unive.lisa.symbolic.value.Constant;
-import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.TernaryOperator;
 import it.unive.lisa.symbolic.value.UnaryOperator;
-import it.unive.lisa.symbolic.value.ValueExpression;
 
 /**
  * The basic integer constant propagation abstract domain, tracking if a certain
@@ -74,13 +69,8 @@ public class IntegerConstantPropagation extends BaseNonRelationalValueDomain<Int
 	}
 
 	@Override
-	public DomainRepresentation representation() {
-		if (isBottom())
-			return Lattice.BOTTOM_REPR;
-		if (isTop())
-			return Lattice.TOP_REPR;
-
-		return new StringRepresentation(value.toString());
+	public String representation() {
+		return isTop() ? Lattice.TOP_STRING : isBottom() ? Lattice.BOTTOM_STRING : value.toString();
 	}
 
 	@Override
@@ -98,16 +88,11 @@ public class IntegerConstantPropagation extends BaseNonRelationalValueDomain<Int
 	@Override
 	protected IntegerConstantPropagation evalUnaryExpression(UnaryOperator operator, IntegerConstantPropagation arg,
 			ProgramPoint pp) {
-
-		if (arg.isTop())
-			return top();
-
 		switch (operator) {
 		case NUMERIC_NEG:
 			return new IntegerConstantPropagation(-value);
 		case STRING_LENGTH:
-		case LOGICAL_NOT:
-		case TYPEOF:
+			return top();
 		default:
 			return top();
 		}
@@ -116,25 +101,20 @@ public class IntegerConstantPropagation extends BaseNonRelationalValueDomain<Int
 	@Override
 	protected IntegerConstantPropagation evalBinaryExpression(BinaryOperator operator, IntegerConstantPropagation left,
 			IntegerConstantPropagation right, ProgramPoint pp) {
-
 		switch (operator) {
 		case NUMERIC_ADD:
-			return left.isTop() || right.isTop() ? top() : new IntegerConstantPropagation(left.value + right.value);
+			return new IntegerConstantPropagation(left.value + right.value);
 		case NUMERIC_DIV:
-			if (!left.isTop() && left.value == 0)
-				return new IntegerConstantPropagation(0);
-			else if (!right.isTop() && right.value == 0)
-				return bottom();
-			else if (left.isTop() || right.isTop() || left.value % right.value != 0)
+			if (left.value % right.value != 0)
 				return top();
 			else
 				return new IntegerConstantPropagation(left.value / right.value);
 		case NUMERIC_MOD:
-			return left.isTop() || right.isTop() ? top() : new IntegerConstantPropagation(left.value % right.value);
+			return new IntegerConstantPropagation(left.value % right.value);
 		case NUMERIC_MUL:
-			return left.isTop() || right.isTop() ? top() : new IntegerConstantPropagation(left.value * right.value);
+			return new IntegerConstantPropagation(left.value * right.value);
 		case NUMERIC_SUB:
-			return left.isTop() || right.isTop() ? top() : new IntegerConstantPropagation(left.value - right.value);
+			return new IntegerConstantPropagation(left.value - right.value);
 		default:
 			return top();
 		}
@@ -195,7 +175,28 @@ public class IntegerConstantPropagation extends BaseNonRelationalValueDomain<Int
 				return false;
 		} else if (!value.equals(other.value))
 			return false;
-		return true;
+		return isTop && other.isTop;
+	}
+
+	@Override
+	protected Satisfiability satisfiesAbstractValue(IntegerConstantPropagation value, ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
+	}
+
+	@Override
+	protected Satisfiability satisfiesNullConstant(ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
+	}
+
+	@Override
+	protected Satisfiability satisfiesNonNullConstant(Constant constant, ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
+	}
+
+	@Override
+	protected Satisfiability satisfiesUnaryExpression(UnaryOperator operator, IntegerConstantPropagation arg,
+			ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
 	}
 
 	@Override
@@ -224,18 +225,8 @@ public class IntegerConstantPropagation extends BaseNonRelationalValueDomain<Int
 	}
 
 	@Override
-	protected ValueEnvironment<IntegerConstantPropagation> assumeBinaryExpression(
-			ValueEnvironment<IntegerConstantPropagation> environment, BinaryOperator operator, ValueExpression left,
-			ValueExpression right, ProgramPoint pp) throws SemanticException {
-		switch (operator) {
-		case COMPARISON_EQ:
-			if (left instanceof Identifier)
-				environment = environment.assign((Identifier) left, right, pp);
-			else if (right instanceof Identifier)
-				environment = environment.assign((Identifier) right, left, pp);
-			return environment;
-		default:
-			return environment;
-		}
+	protected Satisfiability satisfiesTernaryExpression(TernaryOperator operator, IntegerConstantPropagation left,
+			IntegerConstantPropagation middle, IntegerConstantPropagation right, ProgramPoint pp) {
+		return Satisfiability.UNKNOWN;
 	}
 }

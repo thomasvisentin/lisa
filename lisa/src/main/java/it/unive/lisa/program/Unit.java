@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * 
  * @author <a href="mailto:luca.negrini@unive.it">Luca Negrini</a>
  */
-public abstract class Unit {
+public abstract class Unit extends CodeElement {
 
 	/**
 	 * The name of the unit
@@ -43,11 +43,17 @@ public abstract class Unit {
 	private final Map<String, NativeCFG> constructs;
 
 	/**
-	 * Builds a unit, defined at the given location.
+	 * Builds a unit, defined at the given program point.
 	 * 
-	 * @param name the name of the unit
+	 * @param sourceFile the source file where the unit is defined
+	 * @param line       the line where the unit is defined within the source
+	 *                       file
+	 * @param col        the column where the unit is defined within the source
+	 *                       file
+	 * @param name       the name of the unit
 	 */
-	protected Unit(String name) {
+	protected Unit(String sourceFile, int line, int col, String name) {
+		super(sourceFile, line, col);
 		this.name = name;
 		this.globals = new ConcurrentHashMap<>();
 		this.cfgs = new ConcurrentHashMap<>();

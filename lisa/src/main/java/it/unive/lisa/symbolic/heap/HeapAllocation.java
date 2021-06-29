@@ -1,10 +1,7 @@
 package it.unive.lisa.symbolic.heap;
 
-import it.unive.lisa.analysis.SemanticException;
-import it.unive.lisa.program.cfg.CodeLocation;
-import it.unive.lisa.symbolic.ExpressionVisitor;
 import it.unive.lisa.type.Type;
-import it.unive.lisa.util.collections.externalSet.ExternalSet;
+import it.unive.lisa.util.collections.ExternalSet;
 
 /**
  * An allocation of a memory location.
@@ -16,12 +13,10 @@ public class HeapAllocation extends HeapExpression {
 	/**
 	 * Builds the heap allocation.
 	 * 
-	 * @param types    the runtime types of this expression
-	 * @param location the code location of the statement that has generated
-	 *                     this expression
+	 * @param types the runtime types of this expression
 	 */
-	public HeapAllocation(ExternalSet<Type> types, CodeLocation location) {
-		super(types, location);
+	public HeapAllocation(ExternalSet<Type> types) {
+		super(types);
 	}
 
 	@Override
@@ -43,10 +38,5 @@ public class HeapAllocation extends HeapExpression {
 	@Override
 	public String toString() {
 		return "new " + getTypes();
-	}
-
-	@Override
-	public <T> T accept(ExpressionVisitor<T> visitor, Object... params) throws SemanticException {
-		return visitor.visit(this, params);
 	}
 }

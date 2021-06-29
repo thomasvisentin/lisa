@@ -2,13 +2,12 @@ package it.unive.lisa.program.cfg.statement;
 
 import it.unive.lisa.analysis.AbstractState;
 import it.unive.lisa.analysis.AnalysisState;
+import it.unive.lisa.analysis.HeapDomain;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.StatementStore;
-import it.unive.lisa.analysis.heap.HeapDomain;
-import it.unive.lisa.analysis.value.ValueDomain;
-import it.unive.lisa.interprocedural.InterproceduralAnalysis;
+import it.unive.lisa.analysis.ValueDomain;
+import it.unive.lisa.callgraph.CallGraph;
 import it.unive.lisa.program.cfg.CFG;
-import it.unive.lisa.program.cfg.CodeLocation;
 import it.unive.lisa.program.cfg.edge.Edge;
 import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.type.Type;
@@ -28,17 +27,34 @@ public class Literal extends Expression {
 	private final Object value;
 
 	/**
+	 * Builds a typed literal, consisting of a constant value. The location
+	 * where this literal happens is unknown (i.e. no source file/line/column is
+	 * available).
+	 * 
+	 * @param cfg        the cfg that this literal belongs to
+	 * @param value      the value of this literal
+	 * @param staticType the type of this literal
+	 */
+	public Literal(CFG cfg, Object value, Type staticType) {
+		this(cfg, null, -1, -1, value, staticType);
+	}
+
+	/**
 	 * Builds a typed literal, consisting of a constant value, happening at the
 	 * given location in the program.
 	 * 
 	 * @param cfg        the cfg that this expression belongs to
-	 * @param location   the location where the expression is defined within the
-	 *                       source file. If unknown, use {@code null}
+	 * @param sourceFile the source file where this expression happens. If
+	 *                       unknown, use {@code null}
+	 * @param line       the line number where this expression happens in the
+	 *                       source file. If unknown, use {@code -1}
+	 * @param col        the column where this expression happens in the source
+	 *                       file. If unknown, use {@code -1}
 	 * @param value      the value of this literal
 	 * @param staticType the type of this literal
 	 */
-	public Literal(CFG cfg, CodeLocation location, Object value, Type staticType) {
-		super(cfg, location, staticType);
+	public Literal(CFG cfg, String sourceFile, int line, int col, Object value, Type staticType) {
+		super(cfg, sourceFile, line, col, staticType);
 		Objects.requireNonNull(value, "The value of a literal cannot be null");
 		this.value = value;
 	}
@@ -91,10 +107,9 @@ public class Literal extends Expression {
 	public <A extends AbstractState<A, H, V>,
 			H extends HeapDomain<H>,
 			V extends ValueDomain<V>> AnalysisState<A, H, V> semantics(
-					AnalysisState<A, H, V> entryState, InterproceduralAnalysis<A, H, V> interprocedural,
-					StatementStore<A, H, V> expressions)
+					AnalysisState<A, H, V> entryState, CallGraph callGraph, StatementStore<A, H, V> expressions)
 					throws SemanticException {
-		return entryState.smallStepSemantics(new Constant(getStaticType(), getValue(), getLocation()), this);
+		return entryState.smallStepSemantics(new Constant(getStaticType(), getValue()), this);
 	}
 
 	@Override

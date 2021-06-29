@@ -59,12 +59,7 @@ public enum BinaryOperator implements Operator {
 	 * both {@code b1} and {@code b2} are evaluated The return type of this
 	 * operator is {@link BooleanType}.
 	 */
-	LOGICAL_OR("||") {
-		@Override
-		public BinaryOperator opposite() {
-			return LOGICAL_AND;
-		}
-	},
+	LOGICAL_OR("||"),
 
 	/**
 	 * Given two Boolean values {@code b1} and {@code b2} of type
@@ -73,12 +68,7 @@ public enum BinaryOperator implements Operator {
 	 * both {@code b1} and {@code b2} are evaluated The return type of this
 	 * operator is {@link BooleanType}.
 	 */
-	LOGICAL_AND("&&") {
-		@Override
-		public BinaryOperator opposite() {
-			return LOGICAL_OR;
-		}
-	},
+	LOGICAL_AND("&&"),
 
 	/**
 	 * Given two values, check whether they have different values or different
@@ -87,12 +77,7 @@ public enum BinaryOperator implements Operator {
 	 * {@link BinaryOperator#COMPARISON_EQ}. The return type of this operator is
 	 * {@link BooleanType}.
 	 */
-	COMPARISON_NE("!=") {
-		@Override
-		public BinaryOperator opposite() {
-			return COMPARISON_EQ;
-		}
-	},
+	COMPARISON_NE("!="),
 
 	/**
 	 * Given two values, check whether they have same values and same type. If
@@ -100,12 +85,7 @@ public enum BinaryOperator implements Operator {
 	 * the logical negation of {@link BinaryOperator#COMPARISON_NE}. The return
 	 * type of this operator is {@link BooleanType}.
 	 */
-	COMPARISON_EQ("==") {
-		@Override
-		public BinaryOperator opposite() {
-			return COMPARISON_NE;
-		}
-	},
+	COMPARISON_EQ("=="),
 
 	/**
 	 * Given two numeric values {@code n1} and {@code n2} of type
@@ -114,12 +94,7 @@ public enum BinaryOperator implements Operator {
 	 * value is returned, false otherwise. The return type of this operator is
 	 * {@link BooleanType}.
 	 */
-	COMPARISON_GE(">=") {
-		@Override
-		public BinaryOperator opposite() {
-			return COMPARISON_LT;
-		}
-	},
+	COMPARISON_GE(">="),
 
 	/**
 	 * Given two numeric values {@code n1} and {@code n2}, this operator checks
@@ -127,12 +102,7 @@ public enum BinaryOperator implements Operator {
 	 * {@code n2}. If so, true value is returned, false otherwise. The return
 	 * type of this operator is {@link BooleanType}.
 	 */
-	COMPARISON_GT(">") {
-		@Override
-		public BinaryOperator opposite() {
-			return COMPARISON_LE;
-		}
-	},
+	COMPARISON_GT(">"),
 
 	/**
 	 * Given two numeric values {@code n1} and {@code n2}, this operator checks
@@ -140,12 +110,7 @@ public enum BinaryOperator implements Operator {
 	 * with {@code n2}. If so, true value is returned, false otherwise. The
 	 * return type of this operator is {@link BooleanType}.
 	 */
-	COMPARISON_LE("<=") {
-		@Override
-		public BinaryOperator opposite() {
-			return COMPARISON_GT;
-		}
-	},
+	COMPARISON_LE("<="),
 
 	/**
 	 * Given two numeric values {@code n1} and {@code n2}, this operator checks
@@ -153,12 +118,7 @@ public enum BinaryOperator implements Operator {
 	 * {@code n2}. If so, true value is returned, false otherwise. The return
 	 * type of this operator is {@link BooleanType}.
 	 */
-	COMPARISON_LT("<") {
-		@Override
-		public BinaryOperator opposite() {
-			return COMPARISON_GE;
-		}
-	},
+	COMPARISON_LT("<"),
 
 	/**
 	 * Given two string values {@code s1} and {@code s2} of type
@@ -216,19 +176,9 @@ public enum BinaryOperator implements Operator {
 	 * Casts the type of the left-hand side of this expression to the type of
 	 * the right-hand side. The returned value is exactly the left-hand side,
 	 * but with its runtime types filtered to be instances of the right-hand
-	 * side type. Indeed, this operation on types is a narrowing operator,
-	 * namely the destination type is smaller than the source type.
+	 * side type.
 	 */
-	TYPE_CAST("cast-as"),
-
-	/**
-	 * Converts the type of the left-hand side of this expression to the type of
-	 * the right-hand side. The returned value is exactly the right-hand side,
-	 * if the left-hand side type an be converted to the right-hand side one.
-	 * Indeed, this operation on types is a widening operator, namely the
-	 * destination type is greater than the source type.
-	 */
-	TYPE_CONV("conv-as"),
+	TYPE_CAST("as"),
 
 	/**
 	 * Tests if the type of the left-hand side of this expression is the same

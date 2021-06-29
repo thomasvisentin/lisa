@@ -1,11 +1,7 @@
 package it.unive.lisa.symbolic.heap;
 
-import it.unive.lisa.analysis.SemanticException;
-import it.unive.lisa.program.cfg.CodeLocation;
-import it.unive.lisa.symbolic.ExpressionVisitor;
-import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.type.Type;
-import it.unive.lisa.util.collections.externalSet.ExternalSet;
+import it.unive.lisa.util.collections.ExternalSet;
 
 /**
  * A reference to a memory location, identified by its name.
@@ -15,43 +11,36 @@ import it.unive.lisa.util.collections.externalSet.ExternalSet;
 public class HeapReference extends HeapExpression {
 
 	/**
-	 * The expression referred by this expression
+	 * The name representing the memory location
 	 */
-	private final SymbolicExpression expression;
+	private final String name;
 
 	/**
 	 * Builds the heap reference.
 	 * 
-	 * @param types      the runtime types of this expression
-	 * @param expression the expression that this refers to
-	 * @param location   the code location of the statement that has generated
-	 *                       this expression
+	 * @param types the runtime types of this expression
+	 * @param name  the name that identifies the memory location
 	 */
-	public HeapReference(ExternalSet<Type> types, SymbolicExpression expression, CodeLocation location) {
-		super(types, location);
-		this.expression = expression;
+	public HeapReference(ExternalSet<Type> types, String name) {
+		super(types);
+		this.name = name;
 	}
 
-	@Override
-	public String toString() {
-		return "ref$" + expression.toString();
+	/**
+	 * Yields the name that identifies the memory location.
+	 * 
+	 * @return the name
+	 */
+	public final String getName() {
+		return name;
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + ((expression == null) ? 0 : expression.hashCode());
+		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		return result;
-	}
-
-	/**
-	 * Yields the referred expression.
-	 * 
-	 * @return the referred expression
-	 */
-	public SymbolicExpression getExpression() {
-		return expression;
 	}
 
 	@Override
@@ -63,17 +52,16 @@ public class HeapReference extends HeapExpression {
 		if (getClass() != obj.getClass())
 			return false;
 		HeapReference other = (HeapReference) obj;
-		if (expression == null) {
-			if (other.expression != null)
+		if (name == null) {
+			if (other.name != null)
 				return false;
-		} else if (!expression.equals(other.expression))
+		} else if (!name.equals(other.name))
 			return false;
 		return true;
 	}
 
 	@Override
-	public <T> T accept(ExpressionVisitor<T> visitor, Object... params) throws SemanticException {
-		T l = expression.accept(visitor, params);
-		return visitor.visit(this, l, params);
+	public String toString() {
+		return "heap$" + name;
 	}
 }

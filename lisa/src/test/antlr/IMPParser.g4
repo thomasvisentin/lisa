@@ -40,7 +40,7 @@ formals
    ;
 
 formal
-   : ((annotations?) (name = IDENTIFIER))
+   : name = IDENTIFIER
    ;
 /*
  * LITERALS
@@ -91,7 +91,6 @@ expression
    | fieldAccess
    | methodCall
    | assignment
-   | stringExpr
    ;
 
 basicExpr
@@ -135,30 +134,6 @@ fieldAccess
 methodCall
    : receiver DOT name = IDENTIFIER arguments
    ;
-
-stringExpr
-   : unaryStringExpr
-   | binaryStringExpr
-   | ternaryStringExpr
-   ;
-
-unaryStringExpr
-   : STRLEN LPAREN op = expression RPAREN
-   ;
-
-binaryStringExpr
-   : STRCAT LPAREN left = expression COMMA right = expression RPAREN
-   | STRCONTAINS LPAREN left = expression COMMA right = expression RPAREN
-   | STRENDS LPAREN left = expression COMMA right = expression RPAREN
-   | STREQ LPAREN left = expression COMMA right = expression RPAREN
-   | STRINDEXOF LPAREN left = expression COMMA right = expression RPAREN
-   | STRSTARTS LPAREN left = expression COMMA right = expression RPAREN
-   ;
-
-ternaryStringExpr
-   : STRREPLACE LPAREN left = expression COMMA middle = expression COMMA right = expression RPAREN
-   | STRSUB LPAREN left = expression COMMA middle = expression COMMA right = expression RPAREN
-   ;
 /*
  * STATEMENT
  */
@@ -176,7 +151,7 @@ statement
    ;
 
 localDeclaration
-   : annotations? DEFINE IDENTIFIER ASSIGN expression
+   : DEFINE IDENTIFIER ASSIGN expression
    ;
 
 assignment
@@ -204,47 +179,6 @@ forDeclaration
    : (initDecl = localDeclaration | initExpr = expression)? SEMI condition = expression? SEMI post = expression?
    ;
 /*
- * ANNOTATIONS
- */
-   
-   
-unitName
-   : IDENTIFIER (DOT IDENTIFIER)*
-   ;
-
-annotation
-   : name = unitName annotationMembers?
-   ;
-
-annotationMembers
-   : LPAREN annotationMember (COMMA annotationMember)* RPAREN
-   ;
-
-annotationMember
-   : IDENTIFIER ASSIGN annotationValue
-   ;
-
-annotationValue
-   : basicAnnotationValue
-   | arrayAnnotationValue
-   ;
-
-arrayAnnotationValue
-   : LBRACK (basicAnnotationValue (COMMA basicAnnotationValue)*)? RBRACK
-   ;
-
-basicAnnotationValue
-   : SUB? LITERAL_DECIMAL
-   | SUB? LITERAL_FLOAT
-   | LITERAL_STRING
-   | LITERAL_BOOL
-   | unit_name = unitName
-   ;
-
-annotations
-   : LBRACK annotation (COMMA annotation)* RBRACK
-   ;
-/*
  * BLOCK
  */
    
@@ -267,15 +201,15 @@ memberDeclarations
    ;
 
 fieldDeclaration
-   : annotations? name = IDENTIFIER SEMI
+   : name = IDENTIFIER SEMI
    ;
 
 constructorDeclaration
-   : annotations? TILDE name = IDENTIFIER pars = formals code = block
+   : TILDE name = IDENTIFIER pars = formals code = block
    ;
 
 methodDeclaration
-   : annotations? FINAL? name = IDENTIFIER pars = formals code = block
+   : FINAL? name = IDENTIFIER pars = formals code = block
    ;
 /*
  * CLASS
@@ -283,7 +217,7 @@ methodDeclaration
    
    
 unit
-   : annotations? CLASS name = unitName (EXTENDS superclass = unitName)? LBRACE declarations = memberDeclarations RBRACE
+   : CLASS name = IDENTIFIER (EXTENDS superclass = IDENTIFIER)? LBRACE declarations = memberDeclarations RBRACE
    ;
 
 file

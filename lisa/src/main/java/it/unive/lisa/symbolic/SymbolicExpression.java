@@ -1,13 +1,8 @@
 package it.unive.lisa.symbolic;
 
-import it.unive.lisa.analysis.ScopeToken;
 import it.unive.lisa.analysis.SemanticDomain;
-import it.unive.lisa.analysis.SemanticException;
-import it.unive.lisa.program.cfg.CodeLocation;
-import it.unive.lisa.symbolic.value.OutOfScopeIdentifier;
-import it.unive.lisa.symbolic.value.Variable;
 import it.unive.lisa.type.Type;
-import it.unive.lisa.util.collections.externalSet.ExternalSet;
+import it.unive.lisa.util.collections.ExternalSet;
 
 /**
  * A symbolic expression that can be evaluated by {@link SemanticDomain}s.
@@ -17,13 +12,6 @@ import it.unive.lisa.util.collections.externalSet.ExternalSet;
 public abstract class SymbolicExpression {
 
 	/**
-	 * The code location of the statement that has generated this symbolic
-	 * expression. The code location is not used for the equality between two
-	 * symbolic expressions.
-	 */
-	private final CodeLocation location;
-
-	/**
 	 * The runtime types of this expression
 	 */
 	private final ExternalSet<Type> types;
@@ -31,13 +19,10 @@ public abstract class SymbolicExpression {
 	/**
 	 * Builds the symbolic expression.
 	 * 
-	 * @param types    the runtime types of this expression
-	 * @param location the code location of the statement that has generated
-	 *                     this expression
+	 * @param types the runtime types of this expression
 	 */
-	protected SymbolicExpression(ExternalSet<Type> types, CodeLocation location) {
+	protected SymbolicExpression(ExternalSet<Type> types) {
 		this.types = types;
-		this.location = location;
 	}
 
 	/**
@@ -57,52 +42,14 @@ public abstract class SymbolicExpression {
 	 * @return the dynamic type of this expression
 	 */
 	public final Type getDynamicType() {
-		return types.reduce(types.first(), (result, t) -> result.commonSupertype(t));
+		return types.reduce(types.first(), (result, t) -> {
+			if (result.canBeAssignedTo(t))
+				return t;
+			if (t.canBeAssignedTo(result))
+				return result;
+			return t.commonSupertype(result);
+		});
 	}
-
-	/**
-	 * Pushes a new scope, identified by the give token, in the expression. This
-	 * causes all {@link Variable}s to become {@link OutOfScopeIdentifier}s
-	 * associated with the given token.
-	 *
-	 * @param token the token identifying the scope to push
-	 * 
-	 * @return a copy of this expression where the local variables have gone out
-	 *             of scope
-	 * 
-	 * @throws SemanticException if an error occurs during the computation
-	 */
-	public abstract SymbolicExpression pushScope(ScopeToken token) throws SemanticException;
-
-	/**
-	 * Pops the scope identified by the given token from the expression. This
-	 * causes all the invisible variables (i.e. {@link OutOfScopeIdentifier}s)
-	 * mapped to the given scope to become visible (i.e. {@link Variable}s)
-	 * again.
-	 *
-	 * @param token the token of the scope to be restored
-	 * 
-	 * @return a copy of this expression where the local variables associated
-	 *             with the given scope are visible again
-	 * 
-	 * @throws SemanticException if an error occurs during the computation
-	 */
-	public abstract SymbolicExpression popScope(ScopeToken token) throws SemanticException;
-
-	/**
-	 * Accepts an {@link ExpressionVisitor}, visiting this expression
-	 * recursively.
-	 * 
-	 * @param <T>     the type of value produced by the visiting callbacks
-	 * @param visitor the visitor
-	 * @param params  additional optional parameters to pass to each visiting
-	 *                    callback
-	 * 
-	 * @return the value produced by the visiting operation
-	 * 
-	 * @throws SemanticException if an error occurs during the visiting
-	 */
-	public abstract <T> T accept(ExpressionVisitor<T> visitor, Object... params) throws SemanticException;
 
 	@Override
 	public int hashCode() {
@@ -127,18 +74,6 @@ public abstract class SymbolicExpression {
 		} else if (!types.equals(other.types))
 			return false;
 		return true;
-	}
-
-	/**
-	 * Yields the code location of the statement that has generated this
-	 * symbolic expression. The code location is not used for the equality
-	 * between two symbolic expressions.
-	 * 
-	 * @return the code location of the statement that has generated this
-	 *             symbolic expression
-	 */
-	public CodeLocation getCodeLocation() {
-		return location;
 	}
 
 	@Override

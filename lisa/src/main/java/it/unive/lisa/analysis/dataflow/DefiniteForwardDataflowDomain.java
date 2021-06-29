@@ -1,10 +1,7 @@
 package it.unive.lisa.analysis.dataflow;
 
-import it.unive.lisa.analysis.ScopeToken;
+import it.unive.lisa.analysis.InverseSetLattice;
 import it.unive.lisa.analysis.SemanticException;
-import it.unive.lisa.analysis.lattices.InverseSetLattice;
-import it.unive.lisa.analysis.representation.DomainRepresentation;
-import it.unive.lisa.analysis.representation.SetRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.ValueExpression;
@@ -29,8 +26,6 @@ public class DefiniteForwardDataflowDomain<E extends DataflowElement<DefiniteFor
 
 	private final boolean isTop;
 
-	private final boolean isBottom;
-
 	private final E domain;
 
 	/**
@@ -40,31 +35,23 @@ public class DefiniteForwardDataflowDomain<E extends DataflowElement<DefiniteFor
 	 *                   to perform <i>kill</i> and <i>gen</i> operations
 	 */
 	public DefiniteForwardDataflowDomain(E domain) {
-		this(domain, new HashSet<>(), true, false);
+		this(domain, new HashSet<>(), true);
 	}
 
-	private DefiniteForwardDataflowDomain(E domain, Set<E> elements, boolean isTop, boolean isBottom) {
+	private DefiniteForwardDataflowDomain(E domain, Set<E> elements, boolean isTop) {
 		super(elements);
 		this.domain = domain;
 		this.isTop = isTop;
-		this.isBottom = isBottom;
 	}
 
 	@Override
 	public DefiniteForwardDataflowDomain<E> assign(Identifier id, ValueExpression expression, ProgramPoint pp)
 			throws SemanticException {
-		if (isBottom())
-			return this;
-
-		// if id cannot be tracked by the underlying lattice,
-		// or if the expression cannot be processed, return this
-		if (!domain.tracksIdentifiers(id) || !domain.canProcess(expression))
-			return this;
 		DefiniteForwardDataflowDomain<E> killed = forgetIdentifiers(domain.kill(id, expression, pp, this));
 		Set<E> updated = new HashSet<>(killed.elements);
 		for (E generated : domain.gen(id, expression, pp, this))
 			updated.add(generated);
-		return new DefiniteForwardDataflowDomain<E>(domain, updated, false, false);
+		return new DefiniteForwardDataflowDomain<E>(domain, updated, false);
 	}
 
 	@Override
@@ -94,7 +81,7 @@ public class DefiniteForwardDataflowDomain<E extends DataflowElement<DefiniteFor
 			return this;
 		Set<E> updated = new HashSet<>(elements);
 		updated.removeAll(toRemove);
-		return new DefiniteForwardDataflowDomain<E>(domain, updated, false, false);
+		return new DefiniteForwardDataflowDomain<E>(domain, updated, false);
 	}
 
 	@Override
@@ -104,36 +91,13 @@ public class DefiniteForwardDataflowDomain<E extends DataflowElement<DefiniteFor
 	}
 
 	@Override
-	public DomainRepresentation representation() {
-		return new SetRepresentation(elements, DataflowElement::representation);
-	}
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = super.hashCode();
-		result = prime * result + (isTop ? 1231 : 1237);
-		return result;
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (!super.equals(obj))
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		DefiniteForwardDataflowDomain<E> other = (DefiniteForwardDataflowDomain<E>) obj;
-		if (isTop != other.isTop)
-			return false;
-		return true;
+	public String representation() {
+		return elements.toString();
 	}
 
 	@Override
 	public DefiniteForwardDataflowDomain<E> top() {
-		return new DefiniteForwardDataflowDomain<>(domain, new HashSet<>(), true, false);
+		return new DefiniteForwardDataflowDomain<>(domain, new HashSet<>(), true);
 	}
 
 	@Override
@@ -143,41 +107,21 @@ public class DefiniteForwardDataflowDomain<E extends DataflowElement<DefiniteFor
 
 	@Override
 	public DefiniteForwardDataflowDomain<E> bottom() {
-		return new DefiniteForwardDataflowDomain<>(domain, new HashSet<>(), false, true);
+		return new DefiniteForwardDataflowDomain<>(domain, new HashSet<>(), false);
 	}
 
 	@Override
 	public boolean isBottom() {
-		return elements.isEmpty() && isBottom;
+		return elements.isEmpty() && !isTop;
 	}
 
 	@Override
 	protected DefiniteForwardDataflowDomain<E> mk(Set<E> set) {
-		return new DefiniteForwardDataflowDomain<>(domain, set, false, false);
+		return new DefiniteForwardDataflowDomain<>(domain, set, false);
 	}
 
 	@Override
 	public Collection<E> getDataflowElements() {
 		return elements;
-	}
-
-	@Override
-	public DefiniteForwardDataflowDomain<E> pushScope(ScopeToken scope) throws SemanticException {
-		DefiniteForwardDataflowDomain<E> result = new DefiniteForwardDataflowDomain<>(this.domain);
-		E pushed;
-		for (E element : this.elements)
-			if ((pushed = element.pushScope(scope)) != null)
-				result.elements.add(pushed);
-		return result;
-	}
-
-	@Override
-	public DefiniteForwardDataflowDomain<E> popScope(ScopeToken scope) throws SemanticException {
-		DefiniteForwardDataflowDomain<E> result = new DefiniteForwardDataflowDomain<>(this.domain);
-		E popped;
-		for (E element : this.elements)
-			if ((popped = element.popScope(scope)) != null)
-				result.elements.add(popped);
-		return result;
 	}
 }

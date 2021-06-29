@@ -197,11 +197,9 @@ public class JsonReportComparer {
 	}
 
 	private static boolean matchDotGraphs(File left, File right) throws IOException {
-		try (FileReader l = new FileReader(left); FileReader r = new FileReader(right)) {
-			DotGraph<Statement, Edge, CFG> lDot = DotGraph.readDot(l);
-			DotGraph<Statement, Edge, CFG> rDot = DotGraph.readDot(r);
-			return lDot.equals(rDot);
-		}
+		DotGraph<Statement, Edge, CFG> lDot = DotGraph.readDot(new FileReader(left));
+		DotGraph<Statement, Edge, CFG> rDot = DotGraph.readDot(new FileReader(right));
+		return lDot.equals(rDot);
 	}
 
 	private static class BaseDiffReporter implements DiffReporter {

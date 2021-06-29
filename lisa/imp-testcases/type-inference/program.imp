@@ -43,9 +43,4 @@ class typing {
 				x = "p";
 		return x;
 	}
-		
-	test7() {
-		def x = new int[6];
-		def y = x;
-	}
 }

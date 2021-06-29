@@ -15,7 +15,7 @@ public interface NumericType extends Type {
 	 * @return {@code true} if this numeric type follows a 8-bits format
 	 *             representation; {@code false} otherwise
 	 */
-	boolean is8Bits();
+	public boolean is8Bits();
 
 	/**
 	 * Returns {@code true} if this numeric type follows a 16-bits format
@@ -24,7 +24,7 @@ public interface NumericType extends Type {
 	 * @return {@code true} if this numeric type follows a 16-bits format
 	 *             representation; {@code false} otherwise
 	 */
-	boolean is16Bits();
+	public boolean is16Bits();
 
 	/**
 	 * Returns {@code true} if this numeric type follows a 32-bits format
@@ -33,7 +33,7 @@ public interface NumericType extends Type {
 	 * @return {@code true} if this numeric type follows a 32-bits format
 	 *             representation; {@code false} otherwise
 	 */
-	boolean is32Bits();
+	public boolean is32Bits();
 
 	/**
 	 * Returns {@code true} if this numeric type follows a 64-bits format
@@ -42,7 +42,7 @@ public interface NumericType extends Type {
 	 * @return {@code true} if this numeric type follows a 64-bits format
 	 *             representation; {@code false} otherwise
 	 */
-	boolean is64Bits();
+	public boolean is64Bits();
 
 	/**
 	 * Returns {@code true} if this numeric type is unsigned.
@@ -50,16 +50,7 @@ public interface NumericType extends Type {
 	 * @return {@code true} if this numeric type is unsigned; {@code false}
 	 *             otherwise
 	 */
-	boolean isUnsigned();
-
-	/**
-	 * Returns {@code true} if this numeric type is integral, representing one
-	 * of the numbers in the mathematical set Z.
-	 * 
-	 * @return {@code true} if this numeric type is integral; {@code false}
-	 *             otherwise
-	 */
-	boolean isIntegral();
+	public boolean isUnsigned();
 
 	/**
 	 * Returns {@code true} if this numeric type is signed.
@@ -67,7 +58,7 @@ public interface NumericType extends Type {
 	 * @return {@code true} if this numeric type is signed; {@code false}
 	 *             otherwise
 	 */
-	default boolean isSigned() {
+	public default boolean isSigned() {
 		return !isUnsigned();
 	}
 }

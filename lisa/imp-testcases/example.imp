@@ -21,50 +21,36 @@ class first {}
 class second extends first {}
 
 /*
- * an imp class can be annotated with one or more annotation.
- * annotation can optionally have one or more members
- */
-[ann1, inheritedann2, ann3(i = 1, j = true, k = [1, 2 ,3])]
-class third extends second {}
-
-/*
  * the body of a class is a list of fields, constructors and methods
  */
 class example {
 	
 	/* 
 	 * fields are declared by just specifying their name
-	 * and do not support in-place initialization.
-	 * Field can be annotated 
+	 * and do not support in-place initialization 
 	 */
-	[ann1, ann2, ann3(i = 1, j = true, k = [1, 2 ,3])]
 	field;
 	
 	/*
-	 * methods are declared by specifying their name and their parameters.
-	 * Methods and method parameters can be annotated
+	 * methods are declared by specifying their name and their parameters
 	 */
-	[ann1, ann2, ann3(i = 1, j = true, k = [1, 2 ,3])]
 	foo1() {}
 	foo2() { 
 		// void methods can also have explicit return statements
 		return; 
 	}
-	foo3([notnull] i, [tainted] j) { 
+	foo3(i, j) { 
 		// return statements can return something
 		return i + j; 
 	}
 	
 	/*
 	 * methods starting with ~ are constructors and cannot be overridden,
-	 * but you can omit the ~ to invoke them.
-	 * Also constructors can be annotated.
+	 * but you can omit the ~ to invoke them
 	 */
-	[tainted]
 	~example() {
 		// variable definitions are preceeded by the def keyword
-		// and can be annotated
-		[ann1, ann2, ann3] def x = 10;
+		def x = 10;
 	}
 	
 	types() {
@@ -125,17 +111,6 @@ class example {
 		// - another method call
 		
 		// all expressions can also be grouped between parenthesis!
-		
-		// string operations directly supported (i.e., not in the form of receiver.method(params))
-		strlen("x"); // length of a string
-		strcat("x", "y"); // string concatenation
-		streq("x", "y"); // check if the strings are equal
-		strcon("x", "y"); // check if the second string is contained into the first one
-		strstarts("x", "y"); // check if the first string starts with the second one
-		strends("x", "y"); // check if the first string ends with the second one
-		strindex("x", "y"); // yield the index of the first occourrence of the second string into the first one
-		strrep("x", "y", "z"); // replace all occurrences of the second string inside the first one with the third string
-		strsub("x", 0, 1); // yield the substring of the string, from the first integer (inclusive) to the second one (exclusive)
 	}
 	
 	// methods can be final to avoid overriding by subclasses

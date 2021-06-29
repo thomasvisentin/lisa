@@ -1,12 +1,8 @@
 package it.unive.lisa.symbolic.value;
 
-import it.unive.lisa.analysis.ScopeToken;
-import it.unive.lisa.analysis.SemanticException;
-import it.unive.lisa.program.cfg.CodeLocation;
-import it.unive.lisa.symbolic.ExpressionVisitor;
 import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.type.Type;
-import it.unive.lisa.util.collections.externalSet.ExternalSet;
+import it.unive.lisa.util.collections.ExternalSet;
 
 /**
  * A unary expression that applies a {@link UnaryOperator} to a
@@ -32,12 +28,9 @@ public class UnaryExpression extends ValueExpression {
 	 * @param types      the runtime types of this expression
 	 * @param expression the inner expression
 	 * @param operator   the operator to apply
-	 * @param location   the code location of the statement that has generated
-	 *                       this expression
 	 */
-	public UnaryExpression(ExternalSet<Type> types, SymbolicExpression expression, UnaryOperator operator,
-			CodeLocation location) {
-		super(types, location);
+	public UnaryExpression(ExternalSet<Type> types, SymbolicExpression expression, UnaryOperator operator) {
+		super(types);
 		this.expression = expression;
 		this.operator = operator;
 	}
@@ -59,30 +52,6 @@ public class UnaryExpression extends ValueExpression {
 	 */
 	public UnaryOperator getOperator() {
 		return operator;
-	}
-
-	@Override
-	public ValueExpression removeNegations() {
-		if (operator == UnaryOperator.LOGICAL_NOT && expression instanceof BinaryExpression) {
-			BinaryExpression binary = (BinaryExpression) expression;
-			ValueExpression left = (ValueExpression) binary.getLeft();
-			ValueExpression right = (ValueExpression) binary.getRight();
-			BinaryOperator op = binary.getOperator();
-			return new BinaryExpression(binary.getTypes(), left.removeNegations(), right.removeNegations(),
-					(BinaryOperator) op.opposite(), getCodeLocation());
-		}
-
-		return this;
-	}
-
-	@Override
-	public SymbolicExpression pushScope(ScopeToken token) throws SemanticException {
-		return new UnaryExpression(this.getTypes(), this.expression.pushScope(token), this.operator, getCodeLocation());
-	}
-
-	@Override
-	public SymbolicExpression popScope(ScopeToken token) throws SemanticException {
-		return new UnaryExpression(this.getTypes(), this.expression.popScope(token), this.operator, getCodeLocation());
 	}
 
 	@Override
@@ -116,11 +85,5 @@ public class UnaryExpression extends ValueExpression {
 	@Override
 	public String toString() {
 		return operator.toString() + expression.toString();
-	}
-
-	@Override
-	public <T> T accept(ExpressionVisitor<T> visitor, Object... params) throws SemanticException {
-		T arg = expression.accept(visitor, params);
-		return visitor.visit(this, arg, params);
 	}
 }
