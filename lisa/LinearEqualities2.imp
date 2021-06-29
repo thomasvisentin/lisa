@@ -1,0 +1,11 @@
+Test1() {
+            def a = 0;
+            def b = a-2;
+            def c =  3 ;
+
+            while (a < 100) {
+                b = b - 2;
+                c = c + 2;
+
+            }
+        }
